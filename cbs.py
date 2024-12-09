@@ -237,6 +237,12 @@ class CBSSolver(object):
         #                standard_splitting function). Add a new child node to your open list for each constraint
         #           Ensure to create a copy of any objects that your child nodes might inherit
 
+        # mdd
+        mdd = {
+            'cardinal': [],
+            'semi_cardinal': [],
+            'non_cardinal': []
+        }
         ##Based on provided pseudocode
         while len(self.open_list) > 0:  #while OPEN is not empty do
             P = self.pop_node()  #P <- node from OPEN with smallest cost
@@ -248,7 +254,7 @@ class CBSSolver(object):
             #first collision
             collision = P['collisions'][0]  #collision <- one collision in P.collisions
             constraints = standard_splitting(collision)  #constraints <- standard_splitting(collision)
-
+            child_costs = []
             #generate child node for each constraint
             for constraint in constraints:  #for constraint in constraints do
                 Q = { #Q ← new node
@@ -284,6 +290,16 @@ class CBSSolver(object):
                         Q['collisions'] = detect_collisions(Q['paths'])
                         Q['cost'] = get_sum_of_cost(Q['paths'])
                         self.push_node(Q) #insert Q into OPEN
+
+                # Update cost of child node
+                child_costs.append(Q['cost'])
+            if all(child_cost > P['cost'] for child_cost in child_costs):
+                mdd['cardinal'].append(collision)
+            elif any(child_cost > P['cost'] for child_cost in child_costs):
+                mdd['semi_cardinal'].append(collision)
+            else:
+                mdd['non_cardinal'].append(collision)
+
 
         self.print_results(root)
         return root['paths']
