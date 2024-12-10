@@ -299,7 +299,19 @@ class CBSSolver(object):
                 mdd['semi_cardinal'].append(collision)
             else:
                 mdd['non_cardinal'].append(collision)
+            
+            #TEST to see if its working right
+            if all(child_cost > P['cost'] for child_cost in child_costs):
+                print(f"Cardinal conflict detected: {collision}")
+                mdd['cardinal'].append(collision)
+            elif any(child_cost > P['cost'] for child_cost in child_costs):
+                print(f"Semi-cardinal conflict detected: {collision}")
+                mdd['semi_cardinal'].append(collision)
+            else:
+                print(f"Non-cardinal conflict detected: {collision}")
+                mdd['non_cardinal'].append(collision)
 
+            print('Cardinal:',len(mdd['cardinal']), 'semi_cardinal:', len(mdd['semi_cardinal']), 'non_cardinal:', len(mdd['non_cardinal']))
 
         self.print_results(root)
         return root['paths']
