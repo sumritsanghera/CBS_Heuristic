@@ -3,6 +3,7 @@ import heapq
 import random
 from single_agent_planner import compute_heuristics, a_star, get_location, get_sum_of_cost
 from paths_violate_constraint import paths_violate_constraint
+from mdd import MDD
 
 
 def detect_collision(path1, path2):
@@ -284,6 +285,11 @@ class CBSSolver(object):
                         Q['collisions'] = detect_collisions(Q['paths'])
                         Q['cost'] = get_sum_of_cost(Q['paths'])
                         self.push_node(Q) #insert Q into OPEN
+
+                    #TEST
+                    mdd = MDD(constraint['timestep'], self.my_map, self.starts, self.goals) 
+                    result = mdd.genereate_mdd()
+                    print(result)
 
         self.print_results(root)
         return root['paths']

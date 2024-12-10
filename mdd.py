@@ -13,6 +13,7 @@ class MDD:
         # Set root node in MDD to the start location of agent
         self.mdd[0] = self.start_location 
         for time in range(1, self.timesteps): 
+            print(f"Time: {time}") #TEST
             possible_moves = [] 
             for location in self.mdd[time-1]: 
                 # Find possible moves that allows an agent to progress 
@@ -26,7 +27,9 @@ class MDD:
                     else: 
                         if location not in possible_moves: 
                             possible_moves.append(next_location) 
+                            print(f"Location: {location}, Possible Moves: {possible_moves}") #TEST
                 if location == self.goal_location: 
+                    print(f"Goal reached at timestep {time}")  #TEST
                     return self.mdd
 
             self.mdd[time] = possible_moves
