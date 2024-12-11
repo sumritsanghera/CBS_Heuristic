@@ -16,13 +16,9 @@ class MDD:
         if timestep not in self.mdd[agent]:
             self.mdd[agent][timestep] = path
         else:
-            self.mdd[agent][timestep].append(path)
+            if path not in self.mdd[agent][timestep]:
+                self.mdd[agent][timestep].append(path)
 
-        # Sort inner dictionary in the order of timesteps
-        for agent in self.mdd:
-            self.mdd[agent] = {key: self.mdd[agent][key] for key in sorted(self.mdd[agent])}
-
-        print(self.mdd)
     # construct an MDD for an agent with all of the possible moves
     def generate_mdd(self):
         # Set root node in MDD to the start location of agent
