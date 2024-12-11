@@ -3,6 +3,7 @@ import heapq
 import random
 from single_agent_planner import compute_heuristics, a_star, get_location, get_sum_of_cost
 from paths_violate_constraint import paths_violate_constraint
+from mdd import *
 
 
 def detect_collision(path1, path2):
@@ -238,15 +239,18 @@ class CBSSolver(object):
         #           Ensure to create a copy of any objects that your child nodes might inherit
 
         # mdd
-        mdd = {
-            'cardinal': [],
-            'semi_cardinal': [],
-            'non_cardinal': []
-        }
+        # mdd = {
+        #     'cardinal': [],
+        #     'semi_cardinal': [],
+        #     'non_cardinal': []
+        # }
+
+        mdd = MDD(self.num_of_agents)
+
         ##Based on provided pseudocode
         while len(self.open_list) > 0:  #while OPEN is not empty do
             P = self.pop_node()  #P <- node from OPEN with smallest cost
-            
+            # print(P)
             if len(P['collisions']) == 0: #if P.collisions = 0 then
                 self.print_results(P)
                 return P['paths']  #return P.paths
@@ -254,7 +258,7 @@ class CBSSolver(object):
             #first collision
             collision = P['collisions'][0]  #collision <- one collision in P.collisions
             constraints = standard_splitting(collision)  #constraints <- standard_splitting(collision)
-            child_costs = []
+            # child_costs = []
             #generate child node for each constraint
             for constraint in constraints:  #for constraint in constraints do
                 Q = { #Q ← new node
@@ -292,26 +296,34 @@ class CBSSolver(object):
                         self.push_node(Q) #insert Q into OPEN
 
                 # Update cost of child node
-                child_costs.append(Q['cost'])
-            if all(child_cost > P['cost'] for child_cost in child_costs):
-                mdd['cardinal'].append(collision)
-            elif any(child_cost > P['cost'] for child_cost in child_costs):
-                mdd['semi_cardinal'].append(collision)
-            else:
-                mdd['non_cardinal'].append(collision)
+                # child_costs.append(Q['cost'])
+            # if all(child_cost > P['cost'] for child_cost in child_costs):
+            #     mdd['cardinal'].append(collision)
+            # elif any(child_cost > P['cost'] for child_cost in child_costs):
+            #     mdd['semi_cardinal'].append(collision)
+            # else:
+            #     mdd['non_cardinal'].append(collision)
             
             #TEST to see if its working right
-            if all(child_cost > P['cost'] for child_cost in child_costs):
-                print(f"Cardinal conflict detected: {collision}")
-                mdd['cardinal'].append(collision)
-            elif any(child_cost > P['cost'] for child_cost in child_costs):
-                print(f"Semi-cardinal conflict detected: {collision}")
-                mdd['semi_cardinal'].append(collision)
-            else:
-                print(f"Non-cardinal conflict detected: {collision}")
-                mdd['non_cardinal'].append(collision)
+            # if all(child_cost > P['cost'] for child_cost in child_costs):
+            #     print(f"Cardinal conflict detected: {collision}")
+            #     mdd['cardinal'].append(collision)
+            # elif any(child_cost > P['cost'] for child_cost in child_costs):
+            #     print(f"Semi-cardinal conflict detected: {collision}")
+            #     mdd['semi_cardinal'].append(collision)
+            # else:
+            #     print(f"Non-cardinal conflict detected: {collision}")
+            #     mdd['non_cardinal'].append(collision)
+            #
+            # print('Cardinal:',len(mdd['cardinal']), 'semi_cardinal:', len(mdd['semi_cardinal']), 'non_cardinal:', len(mdd['non_cardinal']))
 
-            print('Cardinal:',len(mdd['cardinal']), 'semi_cardinal:', len(mdd['semi_cardinal']), 'non_cardinal:', len(mdd['non_cardinal']))
+            # TEST
+
+            # mdd = MDD(constraint['timestep'], self.my_map, self.starts, self.goals)
+            # result = mdd.genereate_mdd()
+            # print(result)
+                mdd.add_path(agent_id, path, constraint['timestep'])
+                print(mdd)
 
         self.print_results(root)
         return root['paths']
