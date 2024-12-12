@@ -36,9 +36,8 @@ class MDD:
                     ## check if move makes agent closer to goal or not before adding to MDD
                     if (self.check_distance(location, next_location, self.goal_location) 
                         and next_location not in possible_moves):
-
                         possible_moves.append(next_location) 
-                       # print(f"Location: {location}, Possible Moves: {possible_moves}") #TEST
+                        #print(f"Location: {location}, Possible Moves: {possible_moves}") #TEST
 
                 if location == self.goal_location: 
                     #print(f"Goal reached at timestep {time}")  #TEST
@@ -47,9 +46,17 @@ class MDD:
             self.mdd[time] = possible_moves
             time+=1
 
-    def join_mdd(self, other): 
-        return 
+    def is_dependent(self, other): 
+        agent1_len = len(self.mdd)
+        agent2_len = len(other.mdd)
+        for i in range(max(agent1_len, agent2_len)): 
+            for loc1 in self.mdd[i]: 
+                for loc2 in other.mdd[i]: 
+                    # cardinal conflict (direct collision)
+                    if (loc1 == loc2): 
+                        return True
 
+        return False
 
 
 
