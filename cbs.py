@@ -211,6 +211,9 @@ class CBSSolver(object):
                 'constraints': [],
                 'paths': [],
                 'collisions': []}
+
+        mdd = MDD(self.num_of_agents)
+
         for i in range(self.num_of_agents):  # Find initial path for each agent
             path = a_star(self.my_map, self.starts[i], self.goals[i], self.heuristics[i],
                           i, root['constraints'])
@@ -218,16 +221,20 @@ class CBSSolver(object):
                 raise BaseException('No solutions')
             root['paths'].append(path)
 
+            # Add initial path into mdd
+            for timestep in range(len(path)):
+                mdd.add_path(i, path[timestep], timestep)
+
         root['cost'] = get_sum_of_cost(root['paths'])
         root['collisions'] = detect_collisions(root['paths'])
         self.push_node(root)
 
         # Task 3.1: Testing
-        print(root['collisions'])
+        # print(root['collisions'])
 
         # Task 3.2: Testing
-        for collision in root['collisions']:
-            print(standard_splitting(collision))
+        # for collision in root['collisions']:
+            # print(standard_splitting(collision))
 
         ##############################
         # Task 3.3: High-Level Search
@@ -245,8 +252,6 @@ class CBSSolver(object):
         #     'non_cardinal': []
         # }
 
-        mdd = MDD(self.num_of_agents)
-
         ##Based on provided pseudocode
         while len(self.open_list) > 0:  #while OPEN is not empty do
             P = self.pop_node()  #P <- node from OPEN with smallest cost
@@ -258,6 +263,7 @@ class CBSSolver(object):
             #first collision
             collision = P['collisions'][0]  #collision <- one collision in P.collisions
             constraints = standard_splitting(collision)  #constraints <- standard_splitting(collision)
+            # print(f"collision: {collision}")
             # child_costs = []
             #generate child node for each constraint
             for constraint in constraints:  #for constraint in constraints do
@@ -294,6 +300,10 @@ class CBSSolver(object):
                         Q['collisions'] = detect_collisions(Q['paths'])
                         Q['cost'] = get_sum_of_cost(Q['paths'])
                         self.push_node(Q) #insert Q into OPEN
+                    print(f"\nAt time={constraint['timestep']}, path={path}")
+
+                    # Add constraint into mdd
+                    mdd.add_path(agent_id, P['paths'][agent_id][constraint['timestep']], constraint['timestep'])
 
                 # Update cost of child node
                 # child_costs.append(Q['cost'])
@@ -322,9 +332,8 @@ class CBSSolver(object):
             # mdd = MDD(constraint['timestep'], self.my_map, self.starts, self.goals)
             # result = mdd.genereate_mdd()
             # print(result)
-                mdd.add_path(agent_id, path, constraint['timestep'])
-                print(mdd)
-
+            #     print(path[-1])
+            #     mdd.add_path(agent_id, path[constraint['timestep']-1], constraint['timestep'])
         self.print_results(root)
         return root['paths']
 
