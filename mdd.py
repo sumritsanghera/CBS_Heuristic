@@ -14,10 +14,11 @@ class MDD:
 
     def add_path(self, agent, path, timestep):
         if timestep not in self.mdd[agent]:
-            self.mdd[agent][timestep] = path
+            self.mdd[agent][timestep] = [path]
         else:
             if path not in self.mdd[agent][timestep]:
                 self.mdd[agent][timestep].append(path)
+        print(f"\n{self.mdd}\n")
 
     # construct an MDD for an agent with all of the possible moves
     def generate_mdd(self):
