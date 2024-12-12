@@ -262,7 +262,24 @@ class CBSSolver(object):
 
             #first collision
             collision = P['collisions'][0]  #collision <- one collision in P.collisions
-            constraints = standard_splitting(collision)  #constraints <- standard_splitting(collision)
+            print(f"Timestep: {collision['timestep']}")
+            print(f"Location: {collision['loc']}")
+            
+            #check cardinal
+            is_cardinal = mdd.is_cardinal_conflict(collision)
+            
+            print(f"Is Cardinal: {is_cardinal}")
+            if is_cardinal:
+                print("CARDINAL conflict")
+            else:
+                print("NON-CARDINAL conflict")
+            
+
+            # Continue with your existing constraint handling code
+            constraints = standard_splitting(collision) if not disjoint else disjoint_splitting(collision)
+           
+            #constraints = standard_splitting(collision)  #constraints <- standard_splitting(collision)
+            
             # print(f"collision: {collision}")
             # child_costs = []
             #generate child node for each constraint
