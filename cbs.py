@@ -229,6 +229,19 @@ class CBSSolver(object):
         for collision in root['collisions']:
             print(standard_splitting(collision))
 
+
+        # construct MDD for all agents
+        mdds = dict()
+        for agent in range(self.num_of_agents):
+            mdd_obj = MDD(self.my_map, self.starts[agent], self.goals[agent])
+            mdd = mdd_obj.generate_mdd()
+            mdds[agent] = mdd
+
+        print("\n")
+        print("The MDDS of the agents are:")
+        for mdd in mdds: 
+            print(str(mdd) + ":" , mdds[mdd])
+
         ##############################
         # Task 3.3: High-Level Search
         #           Repeat the following as long as the open list is not empty:
@@ -287,9 +300,9 @@ class CBSSolver(object):
                         self.push_node(Q) #insert Q into OPEN
 
                     #TEST
-                    mdd = MDD(constraint['timestep'], self.my_map, self.starts, self.goals) 
-                    result = mdd.genereate_mdd()
-                    print(result)
+                #    mdd = MDD(self.my_map, self.starts[0], self.goals[0]) 
+                #    result = mdd.genereate_mdd()
+                #    mdd.print_mdd()
 
         self.print_results(root)
         return root['paths']
