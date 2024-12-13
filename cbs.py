@@ -168,7 +168,7 @@ class CBSSolver(object):
         
         self.open_list = []
         
-        # compute heuristics for the low-level search
+        #compute heuristics for low level
         self.heuristics = []
         for goal in self.goals:
             self.heuristics.append(compute_heuristics(my_map, goal))
@@ -202,10 +202,6 @@ class CBSSolver(object):
         return node
 
     def find_solution(self, disjoint=True):
-        """ Finds paths for all agents from their start locations to their goal locations
-
-        disjoint    - use disjoint splitting or not
-        """
 
         self.start_time = timer.time()
 
@@ -221,7 +217,7 @@ class CBSSolver(object):
                 'collisions': [],
                 'mdds': None}  # Will store MDDs for conflict classification
 
-        # Find initial paths for each agent
+        #find initial paths for each agent
         for i in range(self.num_of_agents):
             path = a_star(self.my_map, self.starts[i], self.goals[i], self.heuristics[i],
                          i, root['constraints'])

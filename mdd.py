@@ -27,12 +27,12 @@ class MDD:
         while open_list:
             current_node = open_list.popleft()
             
-            # If we reach goal with exact cost, add the path to MDD
+            #if reached goal with exact cost, add the path to MDD
             if current_node['curr_loc'] == self.goal_loc and current_node['cost'] == self.cost:
                 curr = current_node
                 index = self.cost
                 
-                # Add nodes to MDD by backtracking
+                #add nodes to MDD by backtracking
                 while curr is not None:
                     if curr['curr_loc'] not in self.mdd[index]:
                         self.mdd[index].append(curr['curr_loc'])
@@ -47,14 +47,14 @@ class MDD:
                     index -= 1
                 continue
 
-            # Try all possible moves including wait
+            #try all possible moves including wait
             for dir in range(5):
                 if dir == 4:  # wait action
                     next_loc = current_node['curr_loc']
                 else:
                     next_loc = move(current_node['curr_loc'], dir)
                 
-                # Check if move is valid
+                #check if valid
                 if next_loc[0] < 0 or next_loc[0] >= len(self.my_map) \
                    or next_loc[1] < 0 or next_loc[1] >= len(self.my_map[0]):
                     continue
@@ -70,12 +70,10 @@ class MDD:
                     'curr_loc': next_loc
                 }
                 
-                # Check if path can reach goal within cost bound
                 if child_node['cost'] + self.h_values[next_loc] <= self.cost:
                     open_list.append(child_node)
 
 def detect_cardinal_conflicts(collision, mdds):
-    """Classify conflict following the same logic as return_optimal_conflict"""
     timestep = collision['timestep']
     a1 = collision['a1']
     a2 = collision['a2']
@@ -83,7 +81,7 @@ def detect_cardinal_conflicts(collision, mdds):
     mdd1 = mdds[a1].mdd
     mdd2 = mdds[a2].mdd
     
-    # Check if timestep exceeds MDD depth
+    #check if timestep exceeds MDD depth
     if timestep >= len(mdd1) or timestep >= len(mdd2):
         return "non-cardinal"
     
@@ -127,14 +125,13 @@ def detect_cardinal_conflicts(collision, mdds):
         return "non-cardinal"
 
 def build_joint_mdd(mdd1, mdd2):
-    """Build joint MDD following the same logic as join_MDD"""
     max_depth = min(len(mdd1.mdd), len(mdd2.mdd))
     joint_mdd = {i: [] for i in range(max_depth)}
     
-    # Add root node
+    #root node
     joint_mdd[0] = [(mdd1.mdd[0][0], mdd2.mdd[0][0])]
     
-    # Build level by level
+    #build ds level by level
     for level in range(max_depth - 1):
         for loc1, loc2 in joint_mdd[level]:
             next_locs1 = mdd1.mdd_edges[level].get(loc1, [])
