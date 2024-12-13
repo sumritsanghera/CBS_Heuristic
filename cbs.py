@@ -36,14 +36,6 @@ def detect_collision(path1, path2):
 
 
 def detect_collisions(paths):
-    ##############################
-    # Task 3.1: Return a list of first collisions between all robot pairs.
-    #           A collision can be represented as dictionary that contains the id of the two robots, the vertex or edge
-    #           causing the collision, and the timestep at which the collision occurred.
-    #           You should use your detect_collision function to find a collision between two robots.
-
-    #pass
-
     collisions = []
     num_agents = len(paths)
     
@@ -52,12 +44,11 @@ def detect_collisions(paths):
             collision = detect_collision(paths[i], paths[j])
             if collision:
                 collisions.append({
-                    'a1': i,  #ID of the first agent
-                    'a2': j,  #ID of the second agent
-                    'loc': collision['loc'],  
-                    'timestep': collision['timestep'] 
+                    'a1': i,
+                    'a2': j,
+                    'loc': collision['loc'],
+                    'timestep': collision['timestep']
                 })
-    
     return collisions
 
 
@@ -166,22 +157,38 @@ class CBSSolver(object):
         starts      - [(x1, y1), (x2, y2), ...] list of start locations
         goals       - [(x1, y1), (x2, y2), ...] list of goal locations
         """
-
         self.my_map = my_map
         self.starts = starts
         self.goals = goals
         self.num_of_agents = len(goals)
-
+        
         self.num_of_generated = 0
         self.num_of_expanded = 0
         self.CPU_time = 0
-
+        
         self.open_list = []
-
+        
         # compute heuristics for the low-level search
         self.heuristics = []
         for goal in self.goals:
             self.heuristics.append(compute_heuristics(my_map, goal))
+
+    def _build_mdds(self, node, paths):
+        mdds = []
+        for agent in range(self.num_of_agents):
+            path_cost = len(paths[agent]) - 1
+            mdd = MDD(self.my_map, self.starts[agent], self.goals[agent],
+                      self.heuristics[agent], agent, node['constraints'], path_cost)
+            mdds.append(mdd)
+        return mdds
+
+    def _classify_collision(self, collision, mdds):
+        print(f"Agents involved: {collision['a1']} and {collision['a2']}")
+        print(f"Location(s): {collision['loc']}")
+        print(f"Timestep: {collision['timestep']}")
+        collision_type = detect_cardinal_conflicts(collision, mdds)
+        print(f"Collision classified as: {collision_type}\n")
+        return collision_type
 
     def push_node(self, node):
         heapq.heappush(self.open_list, (node['cost'], len(node['collisions']), self.num_of_generated, node))
@@ -207,150 +214,87 @@ class CBSSolver(object):
         # paths         - list of paths, one for each agent
         #               [[(x11, y11), (x12, y12), ...], [(x21, y21), (x22, y22), ...], ...]
         # collisions     - list of collisions in paths
+        # Generate the root node
         root = {'cost': 0,
                 'constraints': [],
                 'paths': [],
-                'collisions': []}
+                'collisions': [],
+                'mdds': None}  # Will store MDDs for conflict classification
 
-        mdd = MDD(self.num_of_agents)
-
-        for i in range(self.num_of_agents):  # Find initial path for each agent
+        # Find initial paths for each agent
+        for i in range(self.num_of_agents):
             path = a_star(self.my_map, self.starts[i], self.goals[i], self.heuristics[i],
-                          i, root['constraints'])
+                         i, root['constraints'])
             if path is None:
                 raise BaseException('No solutions')
             root['paths'].append(path)
 
-            # Add initial path into mdd
-            for timestep in range(len(path)):
-                mdd.add_path(i, path[timestep], timestep)
-
         root['cost'] = get_sum_of_cost(root['paths'])
         root['collisions'] = detect_collisions(root['paths'])
+        root['mdds'] = self._build_mdds(root, root['paths'])
+        
         self.push_node(root)
 
-        # Task 3.1: Testing
-        # print(root['collisions'])
-
-        # Task 3.2: Testing
-        # for collision in root['collisions']:
-            # print(standard_splitting(collision))
-
-        ##############################
-        # Task 3.3: High-Level Search
-        #           Repeat the following as long as the open list is not empty:
-        #             1. Get the next node from the open list (you can use self.pop_node()
-        #             2. If this node has no collision, return solution
-        #             3. Otherwise, choose the first collision and convert to a list of constraints (using your
-        #                standard_splitting function). Add a new child node to your open list for each constraint
-        #           Ensure to create a copy of any objects that your child nodes might inherit
-
-        # mdd
-        # mdd = {
-        #     'cardinal': [],
-        #     'semi_cardinal': [],
-        #     'non_cardinal': []
-        # }
-
-        ##Based on provided pseudocode
-        while len(self.open_list) > 0:  #while OPEN is not empty do
-            P = self.pop_node()  #P <- node from OPEN with smallest cost
-            # print(P)
-            if len(P['collisions']) == 0: #if P.collisions = 0 then
+        while len(self.open_list) > 0:
+            P = self.pop_node()
+            
+            if len(P['collisions']) == 0:
                 self.print_results(P)
-                return P['paths']  #return P.paths
+                return P['paths']
 
-            #first collision
-            collision = P['collisions'][0]  #collision <- one collision in P.collisions
-            print(f"Timestep: {collision['timestep']}")
-            print(f"Location: {collision['loc']}")
-            
-            #check cardinal
-            is_cardinal = mdd.is_cardinal_conflict(collision)
-            
-            print(f"Is Cardinal: {is_cardinal}")
-            if is_cardinal:
-                print("CARDINAL conflict")
-            else:
-                print("NON-CARDINAL conflict")
-            
+            # Choose collision and classify it
+            collision = P['collisions'][0]
+            collision_type = self._classify_collision(collision, P['mdds'])
+            #print(f"Collision type: {collision_type}")  # Debug info
 
-            # Continue with your existing constraint handling code
-            constraints = standard_splitting(collision) if not disjoint else disjoint_splitting(collision)
-           
-            #constraints = standard_splitting(collision)  #constraints <- standard_splitting(collision)
-            
-            # print(f"collision: {collision}")
-            # child_costs = []
-            #generate child node for each constraint
-            for constraint in constraints:  #for constraint in constraints do
-                Q = { #Q ← new node
-                    'constraints': P['constraints'] + [constraint], #Q.constraints <- P.constraints U {constraint}
+            constraints = disjoint_splitting(collision) if disjoint else standard_splitting(collision)
+
+            for constraint in constraints:
+                Q = {
+                    'constraints': P['constraints'] + [constraint],
                     'paths': P['paths'].copy(),
                     'collisions': [],
-                    'cost': 0
+                    'cost': 0,
+                    'mdds': None
                 }
 
-                #re-visit path
-                agent_id = constraint['agent']    #ai <- the agent in constraint
-                path = a_star(self.my_map, self.starts[agent_id], self.goals[agent_id],
-                              self.heuristics[agent_id], agent_id, Q['constraints'])
+                agent = constraint['agent']
+                path = a_star(self.my_map, self.starts[agent], self.goals[agent],
+                             self.heuristics[agent], agent, Q['constraints'])
                 
-                if path != 0:   #if path is not empty then
-                    Q['paths'][agent_id] = path   #replace the path of agent ai in Q.paths by path
+                if path is not None:
+                    Q['paths'][agent] = path
 
-                    #4.3
                     if disjoint and constraint['positive']:
                         violating_agents = paths_violate_constraint(constraint, Q['paths'])
+                        all_paths_valid = True
+                        
                         for v_agent in violating_agents:
-                            if v_agent != agent_id:
-                                v_constraint = {'agent': v_agent, 'loc': constraint['loc'], 'timestep': constraint['timestep'], 'positive': False}
+                            if v_agent != agent:
+                                v_constraint = {
+                                    'agent': v_agent,
+                                    'loc': constraint['loc'],
+                                    'timestep': constraint['timestep'],
+                                    'positive': False
+                                }
                                 Q['constraints'].append(v_constraint)
-
-                            v_path = a_star(self.my_map, self.starts[v_agent], self.goals[v_agent],
-                                            self.heuristics[v_agent], v_agent, Q['constraints'])
-                            
-                            if v_path is None:
-                                break  #skip this child
-                            Q['paths'][v_agent] = v_path
-                    else:
-                        Q['collisions'] = detect_collisions(Q['paths'])
-                        Q['cost'] = get_sum_of_cost(Q['paths'])
-                        self.push_node(Q) #insert Q into OPEN
-                    print(f"\nAt time={constraint['timestep']}, path={path}")
-
-                    # Add constraint into mdd
-                    mdd.add_path(agent_id, P['paths'][agent_id][constraint['timestep']], constraint['timestep'])
-
-                # Update cost of child node
-                # child_costs.append(Q['cost'])
-            # if all(child_cost > P['cost'] for child_cost in child_costs):
-            #     mdd['cardinal'].append(collision)
-            # elif any(child_cost > P['cost'] for child_cost in child_costs):
-            #     mdd['semi_cardinal'].append(collision)
-            # else:
-            #     mdd['non_cardinal'].append(collision)
-            
-            #TEST to see if its working right
-            # if all(child_cost > P['cost'] for child_cost in child_costs):
-            #     print(f"Cardinal conflict detected: {collision}")
-            #     mdd['cardinal'].append(collision)
-            # elif any(child_cost > P['cost'] for child_cost in child_costs):
-            #     print(f"Semi-cardinal conflict detected: {collision}")
-            #     mdd['semi_cardinal'].append(collision)
-            # else:
-            #     print(f"Non-cardinal conflict detected: {collision}")
-            #     mdd['non_cardinal'].append(collision)
-            #
-            # print('Cardinal:',len(mdd['cardinal']), 'semi_cardinal:', len(mdd['semi_cardinal']), 'non_cardinal:', len(mdd['non_cardinal']))
-
-            # TEST
-
-            # mdd = MDD(constraint['timestep'], self.my_map, self.starts, self.goals)
-            # result = mdd.genereate_mdd()
-            # print(result)
-            #     print(path[-1])
-            #     mdd.add_path(agent_id, path[constraint['timestep']-1], constraint['timestep'])
+                                
+                                v_path = a_star(self.my_map, self.starts[v_agent],
+                                               self.goals[v_agent], self.heuristics[v_agent],
+                                               v_agent, Q['constraints'])
+                                
+                                if v_path is None:
+                                    all_paths_valid = False
+                                    break
+                                Q['paths'][v_agent] = v_path
+                        
+                        if not all_paths_valid:
+                            continue
+                    
+                    Q['collisions'] = detect_collisions(Q['paths'])
+                    Q['cost'] = get_sum_of_cost(Q['paths'])
+                    Q['mdds'] = self._build_mdds(Q, Q['paths'])
+                    self.push_node(Q)
         self.print_results(root)
         return root['paths']
 
