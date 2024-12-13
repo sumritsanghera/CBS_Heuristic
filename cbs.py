@@ -36,6 +36,14 @@ def detect_collision(path1, path2):
 
 
 def detect_collisions(paths):
+    ##############################
+    # Task 3.1: Return a list of first collisions between all robot pairs.
+    #           A collision can be represented as dictionary that contains the id of the two robots, the vertex or edge
+    #           causing the collision, and the timestep at which the collision occurred.
+    #           You should use your detect_collision function to find a collision between two robots.
+
+    #pass
+
     collisions = []
     num_agents = len(paths)
     
@@ -44,8 +52,8 @@ def detect_collisions(paths):
             collision = detect_collision(paths[i], paths[j])
             if collision:
                 collisions.append({
-                    'a1': i,
-                    'a2': j,
+                    'a1': i,  #ID of the first agent
+                    'a2': j,  #ID of the second agent
                     'loc': collision['loc'],
                     'timestep': collision['timestep']
                 })
@@ -157,6 +165,7 @@ class CBSSolver(object):
         starts      - [(x1, y1), (x2, y2), ...] list of start locations
         goals       - [(x1, y1), (x2, y2), ...] list of goal locations
         """
+
         self.my_map = my_map
         self.starts = starts
         self.goals = goals
@@ -168,12 +177,12 @@ class CBSSolver(object):
         
         self.open_list = []
         
-        #compute heuristics for low level
+        # compute heuristics for the low-level search
         self.heuristics = []
         for goal in self.goals:
             self.heuristics.append(compute_heuristics(my_map, goal))
 
-    def _build_mdds(self, node, paths):
+    def build_mdds(self, node, paths):
         mdds = []
         for agent in range(self.num_of_agents):
             path_cost = len(paths[agent]) - 1
@@ -182,7 +191,7 @@ class CBSSolver(object):
             mdds.append(mdd)
         return mdds
 
-    def _classify_collision(self, collision, mdds):
+    def classify_collision(self, collision, mdds):
         print(f"Agents involved: {collision['a1']} and {collision['a2']}")
         print(f"Location(s): {collision['loc']}")
         print(f"Timestep: {collision['timestep']}")
@@ -227,7 +236,7 @@ class CBSSolver(object):
 
         root['cost'] = get_sum_of_cost(root['paths'])
         root['collisions'] = detect_collisions(root['paths'])
-        root['mdds'] = self._build_mdds(root, root['paths'])
+        root['mdds'] = self.build_mdds(root, root['paths'])
         
         self.push_node(root)
 
@@ -240,7 +249,7 @@ class CBSSolver(object):
 
             # Choose collision and classify it
             collision = P['collisions'][0]
-            collision_type = self._classify_collision(collision, P['mdds'])
+            collision_type = self.classify_collision(collision, P['mdds'])
             #print(f"Collision type: {collision_type}")  # Debug info
 
             constraints = disjoint_splitting(collision) if disjoint else standard_splitting(collision)
@@ -289,7 +298,7 @@ class CBSSolver(object):
                     
                     Q['collisions'] = detect_collisions(Q['paths'])
                     Q['cost'] = get_sum_of_cost(Q['paths'])
-                    Q['mdds'] = self._build_mdds(Q, Q['paths'])
+                    Q['mdds'] = self.build_mdds(Q, Q['paths'])
                     self.push_node(Q)
         self.print_results(root)
         return root['paths']
