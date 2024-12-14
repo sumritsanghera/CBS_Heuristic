@@ -233,7 +233,7 @@ class CBSSolver(object):
         # construct MDD for all agents
         mdds = dict()
         for agent in range(self.num_of_agents):
-            mdd_obj = MDD(self.my_map, self.starts[agent], self.goals[agent])
+            mdd_obj = MDD(self.my_map, self.starts[agent], self.goals[agent], len(root['paths']))
             mdd = mdd_obj.generate_mdd()
             mdds[agent] = mdd_obj
 

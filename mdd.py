@@ -1,8 +1,9 @@
 from single_agent_planner import move
 
 class MDD: 
-    def __init__(self, my_map, start_location, goal_location): 
+    def __init__(self, my_map, start_location, goal_location, timesteps): 
         self.start_location = start_location
+        self.timesteps = timesteps
         self.goal_location = goal_location
         self.my_map = my_map
         self.mdd = dict()
@@ -19,7 +20,7 @@ class MDD:
         # Set root node in MDD to the start location of agent
         self.mdd[0] = [self.start_location]
         time = 1
-        while(True):
+        while(time <= self.timesteps):
             #print(f"Time: {time}") #:TEST
             possible_moves = [] 
             for location in self.mdd[time-1]: 
