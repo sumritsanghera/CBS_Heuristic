@@ -37,6 +37,7 @@ class MDD:
                     ## check if move makes agent closer to goal or not before adding to MDD
                     if (self.check_distance(location, next_location, self.goal_location) 
                         and next_location not in possible_moves):
+                        print(next_location)
                         possible_moves.append(next_location) 
                         #print(f"Location: {location}, Possible Moves: {possible_moves}") #TEST
 

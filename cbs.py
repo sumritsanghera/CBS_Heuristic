@@ -221,7 +221,6 @@ class CBSSolver(object):
         root['cost'] = get_sum_of_cost(root['paths'])
         root['collisions'] = detect_collisions(root['paths'])
         self.push_node(root)
-
         # Task 3.1: Testing
         print(root['collisions'])
 
@@ -232,8 +231,9 @@ class CBSSolver(object):
 
         # construct MDD for all agents
         mdds = dict()
+        max_timestep = max(len(agent_paths) for agent_paths in root['paths'])
         for agent in range(self.num_of_agents):
-            mdd_obj = MDD(self.my_map, self.starts[agent], self.goals[agent], len(root['paths']))
+            mdd_obj = MDD(self.my_map, self.starts[agent], self.goals[agent], max_timestep)
             mdd = mdd_obj.generate_mdd()
             mdds[agent] = mdd_obj
 
