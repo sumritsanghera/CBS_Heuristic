@@ -1,11 +1,11 @@
 from single_agent_planner import move
 
 class MDD: 
-    def __init__(self, my_map, start_location, goal_location): 
+    def __init__(self, my_map, start_location, goal_location):
         self.start_location = start_location
         self.goal_location = goal_location
         self.my_map = my_map
-        self.mdd = dict()
+        self.mdd = self.generate_mdd()
 
     def check_distance(self, start, loc, goal):
         old_distance = abs(start[0] - goal[0]) + abs(start[1] - goal[1])
@@ -15,8 +15,9 @@ class MDD:
         return False
 
     # construct an MDD for an agent with all of the possible moves
-    def generate_mdd(self):
+    def generate_mdd(self) -> dict:
         # Set root node in MDD to the start location of agent
+        self.mdd = dict()
         self.mdd[0] = [self.start_location]
         time = 1
         while(True):
@@ -30,7 +31,7 @@ class MDD:
                     if (next_location[0] < 0 or next_location[0] >= len(self.my_map) 
                         or next_location[1] < 0 or next_location[1] >= len(self.my_map)):
                         continue
-                    ## avoid adding obstabcles
+                    ## avoid adding obstacles
                     if self.my_map[next_location[0]][next_location[1]]: 
                         continue
                     ## check if move makes agent closer to goal or not before adding to MDD
@@ -41,21 +42,35 @@ class MDD:
 
                 if location == self.goal_location: 
                     #print(f"Goal reached at timestep {time}")  #TEST
+                    print(f"check mdd: {self.mdd}")
                     return self.mdd
 
             self.mdd[time] = possible_moves
             time+=1
 
-    def is_dependent(self, other): 
-        agent1_len = len(self.mdd)
-        agent2_len = len(other.mdd)
-        for i in range(max(agent1_len, agent2_len)): 
-            for loc1 in self.mdd[i]: 
-                for loc2 in other.mdd[i]: 
-                    # cardinal conflict (direct collision)
-                    if (loc1 == loc2): 
-                        return True
+    def is_dependent(self, other):
+        t_max = max(len(self.mdd), len(other.mdd))
 
+        joint_mdd = {
+            timestep: [] for timestep in range(t_max)
+        }
+
+        joint_mdd[0].append([self.mdd[0][0], other.mdd[0][0]])
+
+        for t in range(t_max):
+            for pair in joint_mdd[t]:
+                children_1 = self.mdd[t+1]
+                children_2 = other.mdd[t+1]
+                for child_1 in children_1:
+                    # Check if in parent-child relationship
+                    if abs(child_1[0]-pair[0][0]) + abs(child_1[1]-pair[0][1]) == 1:
+                        for child_2 in children_2:
+                            if abs(child_2[0] - pair[1][0]) + abs(child_2[1] - pair[1][1]) == 1:
+                                if child_1 != child_2 and [child_1, child_2] not in joint_mdd[t+1]:
+                                    joint_mdd[t+1].append([child_1, child_2])
+            # Check Dependency
+            if len(joint_mdd[t]) == 0:
+                return True
         return False
 
 
