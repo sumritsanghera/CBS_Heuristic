@@ -215,18 +215,6 @@ class CBSSolver(object):
         for goal in self.goals:
             self.heuristics.append(compute_heuristics(my_map, goal))
 
-        self.cardinal_conflicts = 0
-
-    def classify_collision(self, collision, mdds):
-        print(f"Agents involved: {collision['a1']} and {collision['a2']}")
-        print(f"Location(s): {collision['loc']}")
-        print(f"Timestep: {collision['timestep']}")
-        collision_type = detect_cardinal_conflicts(collision, mdds)
-        if collision_type == "cardinal":
-            self.cardinal_conflicts += 1
-        print(f"Collision classified as: {collision_type}\n")
-        return collision_type
-
     def _build_mdds(self, node, paths):
         mdds = []
         for agent in range(self.num_of_agents):
@@ -249,7 +237,6 @@ class CBSSolver(object):
         # print("Generate node {}".format(self.num_of_generated))
         # self.num_of_generated += 1
         h_val = compute_cg_heuristic(node['mdds'], self.num_of_agents)
-        self.final_heuristic = h_val
         heapq.heappush(self.open_list, (node['cost'] + h_val, len(node['collisions']), 
                                     self.num_of_generated, node))
         print("Generate node {} with h-value {}".format(self.num_of_generated, h_val))
@@ -300,12 +287,9 @@ class CBSSolver(object):
                 return P['paths']
 
             # Choose collision and classify it
-            #collision = P['collisions'][0]
-            #collision_type = self._classify_collision(collision, P['mdds'])
+            collision = P['collisions'][0]
+            collision_type = self._classify_collision(collision, P['mdds'])
             #print(f"Collision type: {collision_type}")  # Debug info
-
-            collision, num_cardinal = return_optimal_conflict(P['collisions'], P['mdds'])
-            self.cardinal_conflicts += num_cardinal
 
             constraints = disjoint_splitting(collision) if disjoint else standard_splitting(collision)
 
@@ -366,4 +350,3 @@ class CBSSolver(object):
         print("Sum of costs:    {}".format(get_sum_of_cost(node['paths'])))
         print("Expanded nodes:  {}".format(self.num_of_expanded))
         print("Generated nodes: {}".format(self.num_of_generated))
-        print("Total cardinal conflicts found: {}".format(self.cardinal_conflicts))
