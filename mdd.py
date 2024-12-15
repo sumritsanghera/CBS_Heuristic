@@ -72,10 +72,10 @@ class MDD:
             # Check Dependency and cardinality
             if len(joint_mdd[t]) == 0:
                 if len(joint_mdd[t-1]) == 1:
-                    return True, True
+                    return True
                 else:
-                    return True, False
-        return False, False
+                    return True
+        return False
 
     def is_dependent(self, other) -> (bool, bool):
         t_max = max(len(self.mdd), len(other.mdd))
@@ -98,6 +98,7 @@ class MDD:
                                 if child_1 != child_2 and [child_1, child_2] not in joint_mdd[t+1]:
                                     joint_mdd[t+1].append([child_1, child_2])
             # Check Dependency and cardinality
+            print(joint_mdd)
             if len(joint_mdd[t]) == 0:
                 if len(joint_mdd[t-1]) == 1:
                     return True, True
