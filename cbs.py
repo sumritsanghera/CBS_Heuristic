@@ -243,7 +243,7 @@ class CBSSolver(object):
         # for mdd in mdds:
         #     print(str(mdd) + ":" , mdds[mdd].mdd)
         # TEST for is_dependent
-        print("there is dependency between these agents", mdds[0].is_dependent(mdds[1]))
+        # print("there is dependency between these agents", mdds[0].is_dependent(mdds[1]))
         ##############################
         # Task 3.3: High-Level Search
         #           Repeat the following as long as the open list is not empty:
