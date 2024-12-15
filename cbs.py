@@ -142,21 +142,23 @@ def disjoint_splitting(collision):
 class CBSSolver(object):
     """The high-level search of CBS."""
 
-    def __init__(self, my_map, starts, goals):
+    def __init__(self, my_map, starts, goals, heuristic_option=1):
         """my_map   - list of lists specifying obstacle positions
         starts      - [(x1, y1), (x2, y2), ...] list of start locations
         goals       - [(x1, y1), (x2, y2), ...] list of goal locations
+        heuristic_option - 0: CG heuristic, 1: DG heuristic, -1: No heuristic
         """
-
         self.my_map = my_map
         self.starts = starts
         self.goals = goals
         self.num_of_agents = len(goals)
-        
         self.num_of_generated = 0
         self.num_of_expanded = 0
         self.CPU_time = 0
-        
+
+        self.heuristic_option = heuristic_option
+        self.final_dependencies = set()
+        self.final_conflicts = set()
         self.open_list = []
         
         # compute heuristics for the low-level search
@@ -173,7 +175,8 @@ class CBSSolver(object):
             mdds.append(mdd)
         return mdds
 
-    def _classify_collision(self, collision, mdds):
+    def classify_collision(self, collision, mdds):
+        """Classifies the collisions to help debug during runtime"""
         print("==COLLISION!==")
         #print(f"Agents involved: {collision['a1']} and {collision['a2']}")
         print(f"Location(s): {collision['loc']}")
@@ -183,10 +186,16 @@ class CBSSolver(object):
         return collision_type
 
     def push_node(self, node):
-        h_val = compute_cg_heuristic(node['mdds'], self.num_of_agents)
-        # heapq.heappush(self.open_list, (node['cost'], len(node['collisions']), self.num_of_generated, node))
-        heapq.heappush(self.open_list, (node['cost'] + h_val, len(node['collisions']), 
-                                    self.num_of_generated, node))
+        h_val = 0
+        if self.heuristic_option == 0:
+            conflicts = compute_cg_heuristic(node['mdds'], self.num_of_agents)
+            self.final_conflicts.update(conflicts)
+
+        elif self.heuristic_option == 1:
+            h_val, dependencies = compute_dg_heuristic(node['mdds'], self.num_of_agents)
+            self.final_dependencies.update(dependencies)
+
+        heapq.heappush(self.open_list, (node['cost'], len(node['collisions']), self.num_of_generated, node))
         print("Generate node {}".format(self.num_of_generated, h_val))
         self.num_of_generated += 1
         
@@ -236,7 +245,7 @@ class CBSSolver(object):
 
             # Choose collision and classify it
             collision = P['collisions'][0]
-            collision_type = self._classify_collision(collision, P['mdds'])
+            collision_type = self.classify_collision(collision, P['mdds'])
 
             constraints = disjoint_splitting(collision) if disjoint else standard_splitting(collision)
 
@@ -255,11 +264,9 @@ class CBSSolver(object):
                 
                 if path is not None:
                     Q['paths'][agent] = path
-
                     if disjoint and constraint['positive']:
                         violating_agents = paths_violate_constraint(constraint, Q['paths'])
                         all_paths_valid = True
-                        
                         for v_agent in violating_agents:
                             if v_agent != agent:
                                 v_constraint = {
@@ -278,7 +285,6 @@ class CBSSolver(object):
                                     all_paths_valid = False
                                     break
                                 Q['paths'][v_agent] = v_path
-                        
                         if not all_paths_valid:
                             continue
                     
@@ -289,7 +295,6 @@ class CBSSolver(object):
         self.print_results(root)
         return root['paths']
 
-
     def print_results(self, node):
         print("\n Found a solution! \n")
         CPU_time = timer.time() - self.start_time
@@ -297,3 +302,29 @@ class CBSSolver(object):
         print("Sum of costs:    {}".format(get_sum_of_cost(node['paths'])))
         print("Expanded nodes:  {}".format(self.num_of_expanded))
         print("Generated nodes: {}".format(self.num_of_generated))
+       
+        if self.heuristic_option == 1:
+            print("\nDependency Summary:")
+            print(f"Total number of dependencies found: {len(self.final_dependencies)}")
+            print("Dependencies between agents:")
+            for i, j in sorted(self.final_dependencies):
+                print(f"  Agents {i} and {j}")
+            final_graph = networkx.Graph()
+            for i, j in self.final_dependencies:
+                final_graph.add_edge(i, j)
+        
+            mvc_size = len(vertex_cover.min_weighted_vertex_cover(final_graph))
+            print(f"\nFinal dependency graph heuristic value (H_dg): {mvc_size}")
+        
+        elif self.heuristic_option == 0:
+            print("\nCardinal Conflict Summary")
+            print(f"Total number of cardinal conflicts found: {len(self.final_conflicts)}")
+            print("Cardinal conflicts between agents:")
+            final_graph = networkx.Graph()
+            for i, j, d, loc in self.final_conflicts:
+                final_graph.add_edge(i, j)
+                print(f"  Agents {i} and {j} at depth {d}, location: {loc}")
+                
+            mvc_size = len(vertex_cover.min_weighted_vertex_cover(final_graph))
+            print(f"\nFinal conflict graph heuristic value (H_cg): {mvc_size}")
+            
