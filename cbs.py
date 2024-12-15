@@ -6,58 +6,7 @@ from paths_violate_constraint import paths_violate_constraint
 from mdd import *
 from conflict_graph import *
 
-# def detect_collision(path1, path2):
-#     ##############################
-#     # Task 3.1: Return the first collision that occurs between two robot paths (or None if there is no collision)
-#     #           There are two types of collisions: vertex collision and edge collision.
-#     #           A vertex collision occurs if both robots occupy the same location at the same timestep
-#     #           An edge collision occurs if the robots swap their location at the same timestep.
-#     #           You should use "get_location(path, t)" to get the location of a robot at time t.
 
-#     #pass
-#     max_timestep = max(len(path1), len(path2))
-    
-#     for t in range(max_timestep):
-#         loc1 = get_location(path1, t)
-#         loc2 = get_location(path2, t)
-        
-#         #vertex collision
-#         if loc1 == loc2:
-#             return {'a1': path1, 'a2': path2, 'loc': [loc1], 'timestep': t}
-        
-#         #edge collision
-#         if t < max_timestep - 1:
-#             next_loc1 = get_location(path1, t + 1)
-#             next_loc2 = get_location(path2, t + 1)
-#             if loc1 == next_loc2 and loc2 == next_loc1:
-#                 return {'a1': path1, 'a2': path2, 'loc': [loc1, loc2], 'timestep': t + 1}
-    
-#     return None  #no collision
-
-
-# def detect_collisions(paths):
-#     ##############################
-#     # Task 3.1: Return a list of first collisions between all robot pairs.
-#     #           A collision can be represented as dictionary that contains the id of the two robots, the vertex or edge
-#     #           causing the collision, and the timestep at which the collision occurred.
-#     #           You should use your detect_collision function to find a collision between two robots.
-
-#     #pass
-
-#     collisions = []
-#     num_agents = len(paths)
-    
-#     for i in range(num_agents):
-#         for j in range(i + 1, num_agents):
-#             collision = detect_collision(paths[i], paths[j])
-#             if collision:
-#                 collisions.append({
-#                     'a1': i,  #ID of the first agent
-#                     'a2': j,  #ID of the second agent
-#                     'loc': collision['loc'],
-#                     'timestep': collision['timestep']
-#                 })
-#     return collisions
 def detect_collision(path1, path2):
     collisions = []
     max_timestep = max(len(path1), len(path2))
@@ -225,21 +174,20 @@ class CBSSolver(object):
         return mdds
 
     def _classify_collision(self, collision, mdds):
-        print(f"Agents involved: {collision['a1']} and {collision['a2']}")
+        print("==COLLISION!==")
+        #print(f"Agents involved: {collision['a1']} and {collision['a2']}")
         print(f"Location(s): {collision['loc']}")
         print(f"Timestep: {collision['timestep']}")
         collision_type = detect_cardinal_conflicts(collision, mdds)
-        print(f"Collision classified as: {collision_type}\n")
+        print(f"Collision classified as: {collision_type}")
         return collision_type
 
     def push_node(self, node):
-        # heapq.heappush(self.open_list, (node['cost'], len(node['collisions']), self.num_of_generated, node))
-        # print("Generate node {}".format(self.num_of_generated))
-        # self.num_of_generated += 1
         h_val = compute_cg_heuristic(node['mdds'], self.num_of_agents)
+        # heapq.heappush(self.open_list, (node['cost'], len(node['collisions']), self.num_of_generated, node))
         heapq.heappush(self.open_list, (node['cost'] + h_val, len(node['collisions']), 
                                     self.num_of_generated, node))
-        print("Generate node {} with h-value {}".format(self.num_of_generated, h_val))
+        print("Generate node {}".format(self.num_of_generated, h_val))
         self.num_of_generated += 1
         
 
@@ -289,7 +237,6 @@ class CBSSolver(object):
             # Choose collision and classify it
             collision = P['collisions'][0]
             collision_type = self._classify_collision(collision, P['mdds'])
-            #print(f"Collision type: {collision_type}")  # Debug info
 
             constraints = disjoint_splitting(collision) if disjoint else standard_splitting(collision)
 

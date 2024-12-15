@@ -52,9 +52,7 @@ def compute_cg_heuristic(mdds, agents):
     h_value = 0
     if len(conflict_graph.edges) > 0:
         h_value = len(vertex_cover.min_weighted_vertex_cover(conflict_graph))
-    
-    for i, j, d, loc in cardinal_conflicts:
-        print(f"Cardinal conflict between agents {i} and {j} at depth {d}, location: {loc}")    
+
     return h_value
 
 def print_cg_graph(mdds, agents):
@@ -73,8 +71,8 @@ def print_cg_graph(mdds, agents):
             for d in range(depth):
                 if len(mdd1[d]) == 1 and len(mdd2[d]) == 1:
                     if mdd1[d][0] == mdd2[d][0]:
-                        print(f"Cardinal conflict between agents {i} and {j} at depth {d}")
-                        print(f"Location: {mdd1[d][0]}")
+                        #print(f"Cardinal conflict between agents {i} and {j} at depth {d}")
+                        #print(f"Location: {mdd1[d][0]}")
                         conflict_graph.add_node(i)
                         conflict_graph.add_node(j)
                         conflict_graph.add_edge(i, j)
