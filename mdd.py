@@ -73,6 +73,34 @@ class MDD:
                 if child_node['cost'] + self.h_values[next_loc] <= self.cost:
                     open_list.append(child_node)
 
+    def is_dependent(self, other) -> bool:
+        t_max = max(len(self.mdd), len(other.mdd))
+    
+        joint_mdd = {
+            timestep: [] for timestep in range(t_max)
+        }
+    
+        joint_mdd[0].append([self.mdd[0][0], other.mdd[0][0]])
+    
+        for t in range(t_max):
+            for pair in joint_mdd[t]:
+                children_1 = self.mdd[t + 1]
+                children_2 = other.mdd[t + 1]
+                for child_1 in children_1:
+                    # Check if in parent-child relationship
+                    if abs(child_1[0] - pair[0][0]) + abs(child_1[1] - pair[0][1]) == 1:
+                        for child_2 in children_2:
+                            if abs(child_2[0] - pair[1][0]) + abs(child_2[1] - pair[1][1]) == 1:
+                                if child_1 != child_2 and [child_1, child_2] not in joint_mdd[t + 1]:
+                                    joint_mdd[t + 1].append([child_1, child_2])
+            # Check Dependency and cardinality
+            if len(joint_mdd[t]) == 0:
+                if len(joint_mdd[t - 1]) == 1:
+                    return True
+                else:
+                    return True
+        return False
+
 def detect_cardinal_conflicts(collision, mdds):
     timestep = collision['timestep']
     a1 = collision['a1']

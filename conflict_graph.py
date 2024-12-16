@@ -2,6 +2,7 @@ import networkx
 from networkx.algorithms.approximation import vertex_cover
 from mdd import *
 
+
 def compute_cg_heuristic(mdds, agents):
     """
     Compute h-value using the conflict graph heuristic based on cardinal conflicts
@@ -20,7 +21,7 @@ def compute_cg_heuristic(mdds, agents):
             
             # Check each level for cardinal conflicts
             for d in range(depth):
-                if (len(mdd1[d]) == 1 and len(mdd2[d]) == 1 and 
+                if (len(mdd1[d]) == 1 and len(mdd2[d]) == 1 and
                     mdd1[d][0] == mdd2[d][0]):
                     conflict_graph.add_node(i)
                     conflict_graph.add_node(j)
@@ -55,6 +56,7 @@ def compute_cg_heuristic(mdds, agents):
 
     return h_value
 
+
 def print_cg_graph(mdds, agents):
     """
     Helper function to print the conflict graph for debugging
@@ -85,4 +87,16 @@ def print_cg_graph(mdds, agents):
 
     ###############
 
+
+def compute_dg_heuristics(mdds, agents):
+    """
+    Compute dependency graph heuristics using joint mdd
+    """
+    h_dg = 0
     
+    # Check number of dependencies between all agents
+    for i in range(agents - 1):
+        for j in range(i + 1, agents):
+            if MDD.is_dependent(mdds[i], j):
+                h_dg += 1
+    return h_dg
