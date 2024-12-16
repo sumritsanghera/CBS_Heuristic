@@ -166,24 +166,29 @@ class CBSSolver(object):
         for goal in self.goals:
             self.heuristics.append(compute_heuristics(my_map, goal))
 
-    def _build_mdds(self, node, paths):
-        mdds = []
+    # def build_mdds(self, node, paths):
+    #     mdds = []
+    #     for agent in range(self.num_of_agents):
+    #         path_cost = len(paths[agent]) - 1
+    #         mdd = MDD(self.my_map, self.starts[agent], self.goals[agent],
+    #                   self.heuristics[agent], agent, node['constraints'], path_cost)
+    #         mdds.append(mdd)
+    #     return mdds
+    def build_mdds(self, node): #updated for new mdd.py
+        mdd = []
         for agent in range(self.num_of_agents):
-            path_cost = len(paths[agent]) - 1
-            mdd = MDD(self.my_map, self.starts[agent], self.goals[agent],
-                      self.heuristics[agent], agent, node['constraints'], path_cost)
-            mdds.append(mdd)
-        return mdds
+            mdd_agent = MDD(self.my_map, self.starts[agent], self.goals[agent])
+            mdd.append(mdd_agent)
+        return mdd
 
-    def classify_collision(self, collision, mdds):
+    def classify_collision(self, collision):
         """Classifies the collisions to help debug during runtime"""
         print("==COLLISION!==")
-        #print(f"Agents involved: {collision['a1']} and {collision['a2']}")
         print(f"Location(s): {collision['loc']}")
         print(f"Timestep: {collision['timestep']}")
-        collision_type = detect_cardinal_conflicts(collision, mdds)
-        print(f"Collision classified as: {collision_type}")
-        return collision_type
+        #collision_type = detect_cardinal_conflicts(collision, mdds)
+        #print(f"Collision classified as: {collision_type}")
+        #return collision_type
 
     def push_node(self, node):
         h_val = 0
@@ -232,7 +237,7 @@ class CBSSolver(object):
 
         root['cost'] = get_sum_of_cost(root['paths'])
         root['collisions'] = detect_collisions(root['paths'])
-        root['mdds'] = self._build_mdds(root, root['paths'])
+        root['mdds'] = self.build_mdds(root)
         
         self.push_node(root)
 
@@ -245,7 +250,7 @@ class CBSSolver(object):
 
             # Choose collision and classify it
             collision = P['collisions'][0]
-            collision_type = self.classify_collision(collision, P['mdds'])
+            collision_type = self.classify_collision(collision)
 
             constraints = disjoint_splitting(collision) if disjoint else standard_splitting(collision)
 
@@ -290,7 +295,7 @@ class CBSSolver(object):
                     
                     Q['collisions'] = detect_collisions(Q['paths'])
                     Q['cost'] = get_sum_of_cost(Q['paths'])
-                    Q['mdds'] = self._build_mdds(Q, Q['paths'])
+                    Q['mdds'] = self.build_mdds(Q)
                     self.push_node(Q)
         self.print_results(root)
         return root['paths']

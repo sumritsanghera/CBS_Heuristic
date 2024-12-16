@@ -1,113 +1,167 @@
+# import networkx
+# from networkx.algorithms.approximation import vertex_cover
+# from mdd import *
+
+# def compute_cg_heuristic(mdd, agents):
+#     """Compute h-value using the conflict graph heuristic based on cardinal conflicts"""
+#     conflict_graph = networkx.Graph(name="Conflict Graph")
+#     cardinal_conflicts = []
+    
+#     # Check each pair of agents
+#     for i in range(agents - 1):
+#         for j in range(i + 1, agents):
+#             mdd1 = mdd[i].mdd
+#             mdd2 = mdd[j].mdd
+            
+#             # Find depth for comparison
+#             depth = min(len(mdd1), len(mdd2))
+            
+#             # Check each level for cardinal conflicts
+#             for d in range(depth):
+#                 if (len(mdd1[d]) == 1 and len(mdd2[d]) == 1 and 
+#                     mdd1[d][0] == mdd2[d][0]):
+#                     conflict_graph.add_node(i)
+#                     conflict_graph.add_node(j)
+#                     conflict_graph.add_edge(i, j)
+#                     cardinal_conflicts.append((i, j, d, mdd1[d][0]))
+#                     break
+                
+#                 # Check for cardinal edge conflicts if not at last level
+#                 if d < depth - 1:
+#                     # Only check if both agents have exactly one possible move
+#                     if len(mdd1[d]) == 1 and len(mdd2[d]) == 1:
+#                         loc1 = mdd1[d][0]
+#                         loc2 = mdd2[d][0]
+                        
+#                         # Get next possible locations
+#                         next_locs1 = mdd[i].mdd_edges[d].get(loc1, [])
+#                         next_locs2 = mdd[j].mdd_edges[d].get(loc2, [])
+                        
+#                         # Cardinal edge conflict if agents must swap positions
+#                         if (len(next_locs1) == 1 and len(next_locs2) == 1 and
+#                             next_locs1[0] == loc2 and next_locs2[0] == loc1):
+#                             conflict_graph.add_node(i)
+#                             conflict_graph.add_node(j)
+#                             conflict_graph.add_edge(i, j)
+#                             cardinal_conflicts.append((i, j, d, (loc1, loc2)))
+#                             break
+    
+#     # Compute and print h-value
+#     #h_value = 0
+#     #if len(conflict_graph.edges) > 0:
+#     #    h_value = len(vertex_cover.min_weighted_vertex_cover(conflict_graph))
+
+#     return cardinal_conflicts
+    
+# ###########################
+# ## == Dependency Graph == ##
+# ###########################
+
+# ###TODO: NEEDS WORK###
+# def are_agents_dependent(mdd1, mdd2):
+#     """Check if two agents are dependent. Returns a boolena value
+#     - return true if they have cardinal conflicts
+#     - return false if there exists at least one pair of conflict-free paths
+#     """
+#     # Check cardinal vertex conflicts first
+#     depth = min(len(mdd1.mdd), len(mdd2.mdd))
+#     for i in range(depth):
+#         # Check for cardinal vertex conflicts
+#         if (len(mdd1.mdd[i]) == 1 and len(mdd2.mdd[i]) == 1 and 
+#             mdd1.mdd[i][0] == mdd2.mdd[i][0]):
+#             return True
+            
+#         # Check for cardinal edge conflicts
+#         if i < depth - 1:
+#             if len(mdd1.mdd[i]) == 1 and len(mdd2.mdd[i]) == 1:
+#                 loc1 = mdd1.mdd[i][0]
+#                 loc2 = mdd2.mdd[i][0]
+#                 next_locs1 = mdd1.mdd_edges[i].get(loc1, [])
+#                 next_locs2 = mdd2.mdd_edges[i].get(loc2, [])
+#                 if (len(next_locs1) == 1 and len(next_locs2) == 1 and
+#                     next_locs1[0] == loc2 and next_locs2[0] == loc1):
+#                     return True
+    
+#     # If no cardinal conflicts, check joint MDD
+#     joint_mdd = build_joint_mdd(mdd1, mdd2)
+    
+#     # If joint MDD exists and has valid paths to goal level, agents are not dependent
+#     max_depth = min(len(mdd1.mdd), len(mdd2.mdd))
+#     if joint_mdd and len(joint_mdd[max_depth-1]) > 0:
+#         return False
+        
+#     return True
+
+
+# def compute_dg_heuristic(mdd, agents):
+#     """Compute H_dg value based on dependencies between agents"""
+#     dependency_graph = networkx.Graph(name="Dependency Graph")
+#     dependencies = []
+    
+#     # Check each pair of agents for dependencies
+#     for i in range(agents - 1):
+#         for j in range(i + 1, agents):
+#             if are_agents_dependent(mdd[i], mdd[j]):
+#                 dependency_graph.add_node(i)
+#                 dependency_graph.add_node(j)
+#                 dependency_graph.add_edge(i, j)
+#                 dependencies.append((i, j))
+    
+#     # Compute h-value using minimum vertex cover
+#     h_value = 0
+#     if len(dependency_graph.edges) > 0:
+#         h_value = len(vertex_cover.min_weighted_vertex_cover(dependency_graph))
+    
+#     return h_value, dependencies
+
+####NEW####
+
 import networkx
 from networkx.algorithms.approximation import vertex_cover
 from mdd import *
 
-def compute_cg_heuristic(mdds, agents):
+def compute_cg_heuristic(mdd, agents):
     """Compute h-value using the conflict graph heuristic based on cardinal conflicts"""
     conflict_graph = networkx.Graph(name="Conflict Graph")
     cardinal_conflicts = []
     
-    # Check each pair of agents
+    #check each pair of agents
     for i in range(agents - 1):
         for j in range(i + 1, agents):
-            mdd1 = mdds[i].mdd
-            mdd2 = mdds[j].mdd
+            mdd1 = mdd[i]  
+            mdd2 = mdd[j] 
             
-            # Find depth for comparison
-            depth = min(len(mdd1), len(mdd2))
+            #find depth for comparison
+            depth = min(len(mdd1.mdd), len(mdd2.mdd))
             
-            # Check each level for cardinal conflicts
+            #check each level for cardinal conflicts
             for d in range(depth):
-                if (len(mdd1[d]) == 1 and len(mdd2[d]) == 1 and 
-                    mdd1[d][0] == mdd2[d][0]):
+                if (len(mdd1.mdd[d]) == 1 and len(mdd2.mdd[d]) == 1 and 
+                    mdd1.mdd[d][0] == mdd2.mdd[d][0]):
                     conflict_graph.add_node(i)
                     conflict_graph.add_node(j)
                     conflict_graph.add_edge(i, j)
-                    cardinal_conflicts.append((i, j, d, mdd1[d][0]))
+                    cardinal_conflicts.append((i, j, d, mdd1.mdd[d][0]))
                     break
-                
-                # Check for cardinal edge conflicts if not at last level
-                if d < depth - 1:
-                    # Only check if both agents have exactly one possible move
-                    if len(mdd1[d]) == 1 and len(mdd2[d]) == 1:
-                        loc1 = mdd1[d][0]
-                        loc2 = mdd2[d][0]
-                        
-                        # Get next possible locations
-                        next_locs1 = mdds[i].mdd_edges[d].get(loc1, [])
-                        next_locs2 = mdds[j].mdd_edges[d].get(loc2, [])
-                        
-                        # Cardinal edge conflict if agents must swap positions
-                        if (len(next_locs1) == 1 and len(next_locs2) == 1 and
-                            next_locs1[0] == loc2 and next_locs2[0] == loc1):
-                            conflict_graph.add_node(i)
-                            conflict_graph.add_node(j)
-                            conflict_graph.add_edge(i, j)
-                            cardinal_conflicts.append((i, j, d, (loc1, loc2)))
-                            break
-    
-    # Compute and print h-value
-    #h_value = 0
-    #if len(conflict_graph.edges) > 0:
-    #    h_value = len(vertex_cover.min_weighted_vertex_cover(conflict_graph))
 
     return cardinal_conflicts
-    
-###########################
-## == Dependency Graph == ##
-###########################
 
-###TODO: NEEDS WORK###
-def are_agents_dependent(mdd1, mdd2):
-    """Check if two agents are dependent. Returns a boolena value
-    - return true if they have cardinal conflicts
-    - return false if there exists at least one pair of conflict-free paths
-    """
-    # Check cardinal vertex conflicts first
-    depth = min(len(mdd1.mdd), len(mdd2.mdd))
-    for i in range(depth):
-        # Check for cardinal vertex conflicts
-        if (len(mdd1.mdd[i]) == 1 and len(mdd2.mdd[i]) == 1 and 
-            mdd1.mdd[i][0] == mdd2.mdd[i][0]):
-            return True
-            
-        # Check for cardinal edge conflicts
-        if i < depth - 1:
-            if len(mdd1.mdd[i]) == 1 and len(mdd2.mdd[i]) == 1:
-                loc1 = mdd1.mdd[i][0]
-                loc2 = mdd2.mdd[i][0]
-                next_locs1 = mdd1.mdd_edges[i].get(loc1, [])
-                next_locs2 = mdd2.mdd_edges[i].get(loc2, [])
-                if (len(next_locs1) == 1 and len(next_locs2) == 1 and
-                    next_locs1[0] == loc2 and next_locs2[0] == loc1):
-                    return True
-    
-    # If no cardinal conflicts, check joint MDD
-    joint_mdd = build_joint_mdd(mdd1, mdd2)
-    
-    # If joint MDD exists and has valid paths to goal level, agents are not dependent
-    max_depth = min(len(mdd1.mdd), len(mdd2.mdd))
-    if joint_mdd and len(joint_mdd[max_depth-1]) > 0:
-        return False
-        
-    return True
-
-
-def compute_dg_heuristic(mdds, agents):
+def compute_dg_heuristic(mdd, agents):
     """Compute H_dg value based on dependencies between agents"""
     dependency_graph = networkx.Graph(name="Dependency Graph")
     dependencies = []
     
-    # Check each pair of agents for dependencies
+    #check each pair of agents for dependencies
     for i in range(agents - 1):
         for j in range(i + 1, agents):
-            if are_agents_dependent(mdds[i], mdds[j]):
+            #is_dependent method from mdd.py
+            if mdd[i].is_dependent(mdd[j]):
                 dependency_graph.add_node(i)
                 dependency_graph.add_node(j)
                 dependency_graph.add_edge(i, j)
                 dependencies.append((i, j))
     
-    # Compute h-value using minimum vertex cover
+    #compute h-value using minimum vertex cover
     h_value = 0
     if len(dependency_graph.edges) > 0:
         h_value = len(vertex_cover.min_weighted_vertex_cover(dependency_graph))
