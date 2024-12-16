@@ -222,27 +222,25 @@ class CBSSolver(object):
         root['collisions'] = detect_collisions(root['paths'])
         self.push_node(root)
         # Task 3.1: Testing
-        print(root['collisions'])
+        # print(root['collisions'])
 
         # Task 3.2: Testing
-        for collision in root['collisions']:
-            print(standard_splitting(collision))
+        # for collision in root['collisions']:
+        #     print(standard_splitting(collision))
 
 
         # construct MDD for all agents
         mdds = dict()
-        max_timestep = max(len(agent_paths) for agent_paths in root['paths'])
         for agent in range(self.num_of_agents):
-            mdd_obj = MDD(self.my_map, self.starts[agent], self.goals[agent], max_timestep)
-            mdd = mdd_obj.generate_mdd()
-            mdds[agent] = mdd_obj
+            mdds[agent] = MDD(self.my_map, self.starts[agent], self.goals[agent])
 
-        print("\n")
-        print("The MDDS of the agents are:")
-        for mdd in mdds: 
-            print(str(mdd) + ":" , mdds[mdd].mdd)
+
+        # print("\n")
+        # print("The MDDS of the agents are:")
+        # for mdd in mdds:
+        #     print(str(mdd) + ":" , mdds[mdd].mdd)
         # TEST for is_dependent
-        print("there is dependency between these agents", mdds[0].is_dependent(mdds[1]))
+        # print("there is dependency between these agents", mdds[0].is_dependent(mdds[1]))
         ##############################
         # Task 3.3: High-Level Search
         #           Repeat the following as long as the open list is not empty:
