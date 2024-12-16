@@ -160,6 +160,8 @@ class CBSSolver(object):
         self.final_dependencies = set()
         self.final_conflicts = set()
         self.open_list = []
+
+        self.mdds = dict()
         
         # compute heuristics for the low-level search
         self.heuristics = []
@@ -174,12 +176,13 @@ class CBSSolver(object):
     #                   self.heuristics[agent], agent, node['constraints'], path_cost)
     #         mdds.append(mdd)
     #     return mdds
-    def build_mdds(self, node): #updated for new mdd.py
-        mdd = []
+    def build_mdds(self): #updated for new mdd.py
         for agent in range(self.num_of_agents):
-            mdd_agent = MDD(self.my_map, self.starts[agent], self.goals[agent])
-            mdd.append(mdd_agent)
-        return mdd
+            self.mdds[agent] = MDD(self.my_map, self.starts[agent], self.goals[agent], self.heuristics[agent])
+
+    def update_mdd(self, agent): 
+        self.mdds[agent] = MDD(self.my_map, self.starts[agent], self.goals[agent], self.heuristics[agent])
+
 
     def classify_collision(self, collision):
         """Classifies the collisions to help debug during runtime"""
@@ -193,11 +196,11 @@ class CBSSolver(object):
     def push_node(self, node):
         h_val = 0
         if self.heuristic_option == 0:
-            conflicts = compute_cg_heuristic(node['mdds'], self.num_of_agents)
+            conflicts = compute_cg_heuristic(self.mdds, self.num_of_agents)
             self.final_conflicts.update(conflicts)
 
         elif self.heuristic_option == 1:
-            h_val, dependencies = compute_dg_heuristic(node['mdds'], self.num_of_agents)
+            h_val, dependencies = compute_dg_heuristic(self.mdds, self.num_of_agents)
             self.final_dependencies.update(dependencies)
 
         heapq.heappush(self.open_list, (node['cost'], len(node['collisions']), self.num_of_generated, node))
@@ -237,7 +240,8 @@ class CBSSolver(object):
 
         root['cost'] = get_sum_of_cost(root['paths'])
         root['collisions'] = detect_collisions(root['paths'])
-        root['mdds'] = self.build_mdds(root)
+        # build MDD for all agents
+        self.build_mdds()
         
         self.push_node(root)
 
@@ -295,7 +299,7 @@ class CBSSolver(object):
                     
                     Q['collisions'] = detect_collisions(Q['paths'])
                     Q['cost'] = get_sum_of_cost(Q['paths'])
-                    Q['mdds'] = self.build_mdds(Q)
+                    self.update_mdd(agent)
                     self.push_node(Q)
         self.print_results(root)
         return root['paths']
