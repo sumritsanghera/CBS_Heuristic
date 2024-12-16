@@ -232,7 +232,7 @@ class CBSSolver(object):
         # construct MDD for all agents
         mdds = dict()
         for agent in range(self.num_of_agents):
-            mdds[agent] = MDD(self.my_map, self.starts[agent], self.goals[agent])
+            mdds[agent] = MDD(self.my_map, self.starts[agent], self.goals[agent], self.heuristics[agent])
 
 
         # print("\n")

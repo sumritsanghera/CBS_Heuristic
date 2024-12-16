@@ -1,29 +1,70 @@
 import math
-from single_agent_planner import move
+from single_agent_planner import move, push_node, pop_node, compare_nodes, get_path
+import time
+import heapq
 
-def manhatten_distance(loc, goal):
-    return abs(loc[0] - goal[0]) + abs(loc[1] - goal[1])
+# a_star search to find the distance from current location to goal
+def get_distance(loc, goal, my_map, heuristics): 
+    open_list = [] 
+    closed_list = dict()
+    root = {'loc': loc, 'g_val': 0, 'h_val': heuristics[loc], 'parent': None}
+    push_node(open_list, root)
+    closed_list[root['loc']] = root
+    while len(open_list) > 0: 
+        cur = pop_node(open_list)
+        if cur['loc'] == goal: 
+            return len(get_path(cur))
+        for d in range(4): 
+            new_loc = move(cur['loc'], d)
+            # check for obstacles and grid constraints
+            if (new_loc[0] < 0 or new_loc[0] >= len(my_map)
+            or new_loc[1] < 0 or new_loc[1] >= len(my_map[0])):
+                continue
+            if my_map[new_loc[0]][new_loc[1]]:
+                continue
+            # add new child node
+            child = {'loc': new_loc, 
+                     'g_val': cur['g_val'] + 1, 
+                     'h_val': heuristics[new_loc], 
+                     'parent': cur, 
+                     }
+            if new_loc in closed_list: 
+                existing = closed_list[new_loc]
+                if (compare_nodes(child, existing)):
+                    closed_list[new_loc] = child
+                    push_node(open_list, child)
+            else: 
+                closed_list[new_loc] = child
+                push_node(open_list, child)
 
-def optimal_paths(locs, goal) -> list:
+
+# find best move based from lowest distance from location to goal
+def optimal_paths(locs, goal, already_visited, my_map, heuristics) -> list:
     paths = dict()
     min_dist = math.inf
     for loc in locs:
-        dist = manhatten_distance(loc, goal)
+        if loc in already_visited:
+            continue
+        dist = get_distance(loc, goal, my_map, heuristics)
         if dist not in paths:
             paths[dist] = [loc]
         elif loc not in paths[dist]:
             paths[dist].append(loc)
         if dist < min_dist:
             min_dist = dist
-    return paths[min_dist]
+    if min_dist != math.inf:
+        return paths[min_dist]
+    else: 
+        return []
 
 
 class MDD:
-    def __init__(self, my_map, loc_start, loc_goal):
+    def __init__(self, my_map, loc_start, loc_goal, heuristics):
         self.loc_start = loc_start
         self.loc_goal = loc_goal
         self.my_map = my_map
         self.mdd = dict()
+        self.heuristics = heuristics
         self.generate_mdd()
 
     # construct an MDD for an agent with all the possible moves
@@ -31,6 +72,7 @@ class MDD:
     # Set root node in MDD to the start location of agent
         self.mdd[0] = [self.loc_start]
         time = 1
+        already_visited = []
         while True:
             # print(f"Time: {time}") #:TEST
             possible_moves = []
@@ -40,6 +82,7 @@ class MDD:
                     print(f"check mdd: {self.mdd}")
                     return
                 # Find possible moves that allow an agent to progress
+                already_visited.append(loc)
                 for i in range(4):
                     loc_next = move(loc, i)
                     # make sure all moves are within bounds
@@ -49,10 +92,12 @@ class MDD:
                     # avoid adding obstacles
                     if self.my_map[loc_next[0]][loc_next[1]]:
                         continue
-                    possible_moves.append(loc_next)
+                    if loc_next not in possible_moves:
+                        possible_moves.append(loc_next)
                     # print(f"Location: {location}, Possible Moves: {possible_moves}") #TEST
-                self.mdd[time] = optimal_paths(possible_moves, self.loc_goal)
-
+            
+                self.mdd[time] = optimal_paths(possible_moves, self.loc_goal, already_visited, self.my_map,
+                                           self.heuristics)
 
             # self.mdd[time] = possible_moves
             time += 1
