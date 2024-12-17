@@ -179,18 +179,18 @@ class CBSSolver(object):
     #     return mdds
     def build_mdds(self): #updated for new mdd.py
         for agent in range(self.num_of_agents):
-            self.mdds[agent] = MDD(self.my_map, self.starts[agent], self.goals[agent], self.heuristics[agent], [])
+            self.mdds[agent] = MDD(self.my_map, self.starts[agent], self.goals[agent], self.heuristics[agent])
 
-    def update_mdd(self, agent, constraints): 
+    def update_mdd(self, agent): 
         self.mdds[agent] = MDD(self.my_map, self.starts[agent], self.goals[agent], 
-                               self.heuristics[agent], build_constraint_table(constraints, agent))
+                               self.heuristics[agent])
 
 
     def classify_collision(self, collision):
         """Classifies the collisions to help debug during runtime"""
-        print("==COLLISION!==")
-        print(f"Location(s): {collision['loc']}")
-        print(f"Timestep: {collision['timestep']}")
+        #print("==COLLISION!==")
+        #print(f"Location(s): {collision['loc']}")
+        #print(f"Timestep: {collision['timestep']}")
         #collision_type = detect_cardinal_conflicts(collision, mdds)
         #print(f"Collision classified as: {collision_type}")
         #return collision_type
@@ -215,7 +215,7 @@ class CBSSolver(object):
 
         heapq.heappush(self.open_list, (f_val, h_val, len(node['collisions']), self.num_of_generated, node))
 
-        print("Generate node {} with f-val {} (g-val {} + h-val {})".format(self.num_of_generated, f_val, node['cost'], h_val))
+        #print("Generate node {} with f-val {} (g-val {} + h-val {})".format(self.num_of_generated, f_val, node['cost'], h_val))
         #heapq.heappush(self.open_list, (node['cost'], len(node['collisions']), self.num_of_generated, node))
         #print("Generate node {}".format(self.num_of_generated, h_val))
         self.num_of_generated += 1
@@ -320,7 +320,7 @@ class CBSSolver(object):
                     
                     Q['collisions'] = detect_collisions(Q['paths'])
                     Q['cost'] = get_sum_of_cost(Q['paths'])
-                    self.update_mdd(agent, Q['constraints'])
+                    self.update_mdd(agent)
                     self.push_node(Q)
         self.print_results(root)
         return root['paths']

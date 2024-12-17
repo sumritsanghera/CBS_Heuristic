@@ -148,18 +148,11 @@
 ####NEW####
 
 import math
-from single_agent_planner import move, push_node, pop_node, compare_nodes, get_path, is_constrained
+from single_agent_planner import move, push_node, pop_node, compare_nodes, get_path
 import heapq
 
 # a_star search to find the distance from current location to goal
-def get_distance(loc, goal, my_map, heuristics, constraints): 
-    invalid_locations = [] 
-    if constraints:
-        for constraint in constraints: 
-            for c in constraints[constraint]: 
-                if c['loc'][0] not in invalid_locations: 
-                    invalid_locations.append(c['loc'][0])
-
+def get_distance(loc, goal, my_map, heuristics): 
     open_list = [] 
     closed_list = dict()
     root = {'loc': loc, 'g_val': 0, 'h_val': heuristics[loc], 'parent': None}
@@ -176,8 +169,6 @@ def get_distance(loc, goal, my_map, heuristics, constraints):
             or new_loc[1] < 0 or new_loc[1] >= len(my_map[0])):
                 continue
             if my_map[new_loc[0]][new_loc[1]]:
-                continue
-            if new_loc in invalid_locations: 
                 continue
             # add new child node
             child = {'loc': new_loc, 
@@ -196,13 +187,13 @@ def get_distance(loc, goal, my_map, heuristics, constraints):
 
 
 # find best move based from lowest distance from location to goal
-def optimal_paths(locs, goal, already_visited, my_map, heuristics, constraints) -> list:
+def optimal_paths(locs, goal, already_visited, my_map, heuristics) -> list:
     paths = dict()
     min_dist = math.inf
     for loc in locs:
         if loc in already_visited:
             continue
-        dist = get_distance(loc, goal, my_map, heuristics, constraints)
+        dist = get_distance(loc, goal, my_map, heuristics)
         if dist is None: 
             continue
         if dist not in paths:
@@ -218,13 +209,12 @@ def optimal_paths(locs, goal, already_visited, my_map, heuristics, constraints) 
 
 
 class MDD:
-    def __init__(self, my_map, loc_start, loc_goal, heuristics, constraints):
+    def __init__(self, my_map, loc_start, loc_goal, heuristics):
         self.loc_start = loc_start
         self.loc_goal = loc_goal
         self.my_map = my_map
         self.mdd = dict()
         self.heuristics = heuristics
-        self.constraints = constraints
         self.generate_mdd()
 
     # construct an MDD for an agent with all the possible moves
@@ -259,7 +249,7 @@ class MDD:
                     # print(f"Location: {location}, Possible Moves: {possible_moves}") #TEST
             
                 self.mdd[time] = optimal_paths(possible_moves, self.loc_goal, already_visited, self.my_map,
-                                           self.heuristics, self.constraints)
+                                           self.heuristics)
 
             # self.mdd[time] = possible_moves
             time += 1

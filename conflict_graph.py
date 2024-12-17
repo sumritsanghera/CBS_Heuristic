@@ -146,7 +146,7 @@ def compute_cg_heuristic(mdd, agents):
                     break
 
                 #edge conflicts
-                if d < depth - 2:  
+                if d < depth - 1:  
                     curr1 = mdd1.mdd[d][0]
                     curr2 = mdd2.mdd[d][0]
                     next1 = mdd1.mdd[d+1][0]
@@ -181,7 +181,6 @@ def compute_dg_heuristic(mdd, agents):
     h_value = 0
     if len(dependency_graph.edges) > 0:
         h_value = len(vertex_cover.min_weighted_vertex_cover(dependency_graph))
-    
     return h_value, dependencies
 
 def get_node_weights(dependency_graph, component):
