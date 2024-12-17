@@ -142,7 +142,7 @@ def disjoint_splitting(collision):
 class CBSSolver(object):
     """The high-level search of CBS."""
 
-    def __init__(self, my_map, starts, goals, heuristic_option=1):
+    def __init__(self, my_map, starts, goals, heuristic_option=2):
         """my_map   - list of lists specifying obstacle positions
         starts      - [(x1, y1), (x2, y2), ...] list of start locations
         goals       - [(x1, y1), (x2, y2), ...] list of goal locations
@@ -162,6 +162,7 @@ class CBSSolver(object):
         self.open_list = []
 
         self.mdds = dict()
+        self.initial_paths = []
         
         # compute heuristics for the low-level search
         self.heuristics = []
@@ -201,6 +202,10 @@ class CBSSolver(object):
 
         elif self.heuristic_option == 1:
             h_val, dependencies = compute_dg_heuristic(self.mdds, self.num_of_agents)
+            self.final_dependencies.update(dependencies)
+
+        elif self.heuristic_option == 2:
+            h_val, dependencies = compute_wdg_heuristic(self.mdds, self.num_of_agents, self.initial_paths, node['paths'])
             self.final_dependencies.update(dependencies)
 
         #calculate the f-value
@@ -250,6 +255,8 @@ class CBSSolver(object):
             if path is None:
                 raise BaseException('No solutions')
             root['paths'].append(path)
+
+        self.initial_paths = root['paths']
 
         root['cost'] = get_sum_of_cost(root['paths'])
         root['collisions'] = detect_collisions(root['paths'])

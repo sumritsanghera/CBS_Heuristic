@@ -183,3 +183,40 @@ def compute_dg_heuristic(mdd, agents):
         h_value = len(vertex_cover.min_weighted_vertex_cover(dependency_graph))
     
     return h_value, dependencies
+
+def get_node_weights(dependency_graph, component):
+    # only one edge
+    if len(component) == 2: 
+        return dependency_graph[component[0]][component[1]]['weight']
+    else: 
+        vertex_weights = dict()
+        for i in range(len(component)-1): 
+            for j in range(i+1, len(component)): 
+                ## TODO return the correct sum of node weights corresponding to the edge weights
+                print("the weight is", dependency_graph[component[i]][component[j]]['weight'])
+                return 0
+
+# WDG heuristic
+def compute_wdg_heuristic(mdd, agents, initial_paths, paths): 
+    dependency_graph = networkx.Graph(name="Dependency Graph") 
+    edge_weights = [] 
+    dependencies = []
+    h_value = 0
+    for i in range(agents-1): 
+        for j in range(i+1, agents): 
+            min_path_length = len(paths[i]) + len(paths[j])
+            cost_of_paths = len(initial_paths[i]) + len(initial_paths[j])
+            diff = min_path_length - cost_of_paths
+            if mdd[i].is_dependent(mdd[j]) and diff > 0:
+                dependency_graph.add_edge(i, j, weight=diff)
+                dependencies.append((i, j))
+        ## TODO get edge-weighted minimum vertex cover
+    if len(dependency_graph.edges) > 0: 
+        print("the min vertex cover is", vertex_cover.min_weighted_vertex_cover(dependency_graph))
+    for u, v, weight in dependency_graph.edges(data=True):
+        print(u, v, weight)
+    connected_components = list(networkx.connected_components(dependency_graph))
+    for component in connected_components: 
+        h_value += get_node_weights(dependency_graph, list(component))
+    print("the connected commpontnets are", connected_components)
+    return h_value, dependencies
