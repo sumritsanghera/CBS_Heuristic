@@ -142,7 +142,7 @@ def disjoint_splitting(collision):
 class CBSSolver(object):
     """The high-level search of CBS."""
 
-    def __init__(self, my_map, starts, goals, heuristic_option=0):
+    def __init__(self, my_map, starts, goals, heuristic_option=1):
         """my_map   - list of lists specifying obstacle positions
         starts      - [(x1, y1), (x2, y2), ...] list of start locations
         goals       - [(x1, y1), (x2, y2), ...] list of goal locations
@@ -200,6 +200,12 @@ class CBSSolver(object):
         if self.heuristic_option == 0:
             conflicts = compute_cg_heuristic(self.mdds, self.num_of_agents)
             self.final_conflicts.update(conflicts)
+
+            conflict_graph = networkx.Graph()
+            for i, j, _, _ in conflicts:
+                conflict_graph.add_edge(i, j)
+            if len(conflict_graph.edges) > 0:
+                h_val = len(vertex_cover.min_weighted_vertex_cover(conflict_graph))
 
         elif self.heuristic_option == 1:
             h_val, dependencies = compute_dg_heuristic(self.mdds, self.num_of_agents)
@@ -275,7 +281,7 @@ class CBSSolver(object):
 
             # Choose collision and classify it
             collision = P['collisions'][0]
-            collision_type = self.classify_collision(collision)
+            #collision_type = self.classify_collision(collision)
 
             constraints = disjoint_splitting(collision) if disjoint else standard_splitting(collision)
 

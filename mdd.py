@@ -231,7 +231,7 @@ class MDD:
             for loc in self.mdd[time - 1]:
                 if loc == self.loc_goal:
                     # print(f"Goal reached at timestep {time}")  #TEST
-                    print(f"check mdd: {self.mdd}")
+                    # print(f"check mdd: {self.mdd}")
                     return
                 # Find possible moves that allow an agent to progress
                 already_visited.append(loc)
