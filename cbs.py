@@ -142,7 +142,7 @@ def disjoint_splitting(collision):
 class CBSSolver(object):
     """The high-level search of CBS."""
 
-    def __init__(self, my_map, starts, goals, heuristic_option=1):
+    def __init__(self, my_map, starts, goals, heuristic_option=0):
         """my_map   - list of lists specifying obstacle positions
         starts      - [(x1, y1), (x2, y2), ...] list of start locations
         goals       - [(x1, y1), (x2, y2), ...] list of goal locations
@@ -169,14 +169,6 @@ class CBSSolver(object):
         for goal in self.goals:
             self.heuristics.append(compute_heuristics(my_map, goal))
 
-    # def build_mdds(self, node, paths):
-    #     mdds = []
-    #     for agent in range(self.num_of_agents):
-    #         path_cost = len(paths[agent]) - 1
-    #         mdd = MDD(self.my_map, self.starts[agent], self.goals[agent],
-    #                   self.heuristics[agent], agent, node['constraints'], path_cost)
-    #         mdds.append(mdd)
-    #     return mdds
     def build_mdds(self): #updated for new mdd.py
         for agent in range(self.num_of_agents):
             self.mdds[agent] = MDD(self.my_map, self.starts[agent], self.goals[agent], self.heuristics[agent])
@@ -186,14 +178,14 @@ class CBSSolver(object):
                                self.heuristics[agent])
 
 
-    def classify_collision(self, collision):
-        """Classifies the collisions to help debug during runtime"""
-        #print("==COLLISION!==")
-        #print(f"Location(s): {collision['loc']}")
-        #print(f"Timestep: {collision['timestep']}")
-        #collision_type = detect_cardinal_conflicts(collision, mdds)
-        #print(f"Collision classified as: {collision_type}")
-        #return collision_type
+    #def classify_collision(self, collision):
+        ### FOR DEBUGGING ###
+        # print("==COLLISION!==")
+        # print(f"Location(s): {collision['loc']}")
+        # print(f"Timestep: {collision['timestep']}")
+        # collision_type = detect_cardinal_conflicts(collision, mdds)
+        # print(f"Collision classified as: {collision_type}")
+        # return collision_type
 
     def push_node(self, node):
         h_val = 0
@@ -215,23 +207,16 @@ class CBSSolver(object):
             h_val, dependencies = compute_wdg_heuristic(self.mdds, self.num_of_agents, self.initial_paths, node['paths'])
             self.final_dependencies.update(dependencies)
 
-        #calculate the f-value
-        f_val = node['cost'] + h_val
+        
+        f_val = node['cost'] + h_val #calculate the f-value
         node['h_val'] = h_val #store h-value in node
 
         heapq.heappush(self.open_list, (f_val, h_val, len(node['collisions']), self.num_of_generated, node))
 
         #print("Generate node {} with f-val {} (g-val {} + h-val {})".format(self.num_of_generated, f_val, node['cost'], h_val))
-        #heapq.heappush(self.open_list, (node['cost'], len(node['collisions']), self.num_of_generated, node))
-        #print("Generate node {}".format(self.num_of_generated, h_val))
+        print("Generate node {}".format(self.num_of_generated, h_val))
         self.num_of_generated += 1
         
-
-    # def pop_node(self):
-    #     _, _, id, node = heapq.heappop(self.open_list)
-    #     print("Expand node {}".format(id))
-    #     self.num_of_expanded += 1
-    #     return node
     def pop_node(self): #update function to accomodate changed push_node
         _, _, _, id, node = heapq.heappop(self.open_list)
         print("Expand node {} with f-val {} (g-val {} + h-val {})".format(
@@ -279,7 +264,7 @@ class CBSSolver(object):
                 self.print_results(P)
                 return P['paths']
 
-            # Choose collision and classify it
+            #choose collision
             collision = P['collisions'][0]
             #collision_type = self.classify_collision(collision)
 
