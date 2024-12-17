@@ -142,7 +142,7 @@ def disjoint_splitting(collision):
 class CBSSolver(object):
     """The high-level search of CBS."""
 
-    def __init__(self, my_map, starts, goals, heuristic_option=0):
+    def __init__(self, my_map, starts, goals, heuristic_option=1):
         """my_map   - list of lists specifying obstacle positions
         starts      - [(x1, y1), (x2, y2), ...] list of start locations
         goals       - [(x1, y1), (x2, y2), ...] list of goal locations
@@ -203,14 +203,27 @@ class CBSSolver(object):
             h_val, dependencies = compute_dg_heuristic(self.mdds, self.num_of_agents)
             self.final_dependencies.update(dependencies)
 
-        heapq.heappush(self.open_list, (node['cost'], len(node['collisions']), self.num_of_generated, node))
-        print("Generate node {}".format(self.num_of_generated, h_val))
+        #calculate the f-value
+        f_val = node['cost'] + h_val
+        node['h_val'] = h_val #store h-value in node
+
+        heapq.heappush(self.open_list, (f_val, h_val, len(node['collisions']), self.num_of_generated, node))
+
+        print("Generate node {} with f-val {} (g-val {} + h-val {})".format(self.num_of_generated, f_val, node['cost'], h_val))
+        #heapq.heappush(self.open_list, (node['cost'], len(node['collisions']), self.num_of_generated, node))
+        #print("Generate node {}".format(self.num_of_generated, h_val))
         self.num_of_generated += 1
         
 
-    def pop_node(self):
-        _, _, id, node = heapq.heappop(self.open_list)
-        print("Expand node {}".format(id))
+    # def pop_node(self):
+    #     _, _, id, node = heapq.heappop(self.open_list)
+    #     print("Expand node {}".format(id))
+    #     self.num_of_expanded += 1
+    #     return node
+    def pop_node(self): #update function to accomodate changed push_node
+        _, _, _, id, node = heapq.heappop(self.open_list)
+        print("Expand node {} with f-val {} (g-val {} + h-val {})".format(
+            id, node['cost'] + node['h_val'], node['cost'], node['h_val']))
         self.num_of_expanded += 1
         return node
 
