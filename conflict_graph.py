@@ -41,8 +41,11 @@ def compute_cg_heuristic(mdd, agents):
                         conflict_graph.add_edge(i, j)
                         cardinal_conflicts.append((i, j, d, (curr1, curr2)))
                         break
+    h_val = 0
+    if len(conflict_graph.edges) > 0:
+        h_val = len(vertex_cover.min_weighted_vertex_cover(conflict_graph))
 
-    return cardinal_conflicts
+    return cardinal_conflicts, h_val
 
 def compute_dg_heuristic(mdd, agents):
     """Compute H_dg value based on dependencies between agents"""
