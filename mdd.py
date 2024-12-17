@@ -252,15 +252,15 @@ class MDD:
 
     # Returns dependency and cardinality
     def is_dependent(self, other) -> bool:
-        t_max = max(len(self.mdd), len(other.mdd))
+        t_min = min(len(self.mdd), len(other.mdd))
 
         joint_mdd = {
-            timestep: [] for timestep in range(t_max)
+            timestep: [] for timestep in range(t_min)
         }
 
         joint_mdd[0].append([self.mdd[0][0], other.mdd[0][0]])
 
-        for t in range(t_max - 2):
+        for t in range(t_min -1 ):
             for pair in joint_mdd[t]:
                 children_1 = self.mdd[t + 1]
                 children_2 = other.mdd[t + 1]
