@@ -1,6 +1,9 @@
 import networkx
 from networkx.algorithms.approximation import vertex_cover
 from mdd import *
+from scipy.optimize import linprog
+import numpy as np
+
 
 def compute_cg_heuristic(mdd, agents):
     """Compute h-value using the conflict graph heuristic based on cardinal conflicts"""
@@ -69,20 +72,54 @@ def get_node_weights(dependency_graph, component):
     # only one edge
     if len(component) == 2: 
         return dependency_graph[component[0]][component[1]]['weight']
+
+    # get minimum vertex weights by solving a system of linear equations 
+    # between node weights and their edge weights
     else: 
-        vertex_weights = dict()
-        for i in range(len(component)-1): 
-            for j in range(i+1, len(component)): 
-                ## TODO return the correct sum of node weights corresponding to the edge weights
-                print("the weight is", dependency_graph[component[i]][component[j]]['weight'])
-                return 0
+        num_vertices = len(component)
+        num_edges = 0
+        edge_weights = []
+        edges = []
+        vertex_indices = dict()
+
+        # map agent_id's to indices for solving node_weights
+        ind = 0
+        for vertex in component: 
+            vertex_indices[vertex] = ind
+            ind+=1
+
+        # get edges, and edge_weights
+        for u, v, weight in dependency_graph.edges(data=True): 
+            if u in component and v in component: 
+                num_edges+=1
+                edge_weights.append(-weight['weight'])
+                edges.append((u, v))
+
+        coefficients = [0]*num_vertices
+        bounds = [(0, None)]*num_vertices
+
+        # set A matrix to solve the system of linear equations
+        A = np.zeros((num_edges, num_vertices))
+        for i in range(num_edges): 
+            agent1 = edges[i][0]
+            agent2 = edges[i][1]
+            A[i][vertex_indices[agent1]] = -1
+            A[i][vertex_indices[agent2]] = -1
+
+        # get the node weights that minimize the sum of node weights for edge-weighted MVC
+        result = linprog(coefficients, A_ub=A, b_ub=edge_weights, bounds=bounds, method="highs") 
+        if (result.success): 
+            return int(sum(result.x))
+        return 0
+
 
 # WDG heuristic
 def compute_wdg_heuristic(mdd, agents, initial_paths, paths): 
     dependency_graph = networkx.Graph(name="Dependency Graph") 
-    edge_weights = [] 
+    edge_weights = dict() 
     dependencies = []
     h_value = 0
+
     for i in range(agents-1): 
         for j in range(i+1, agents): 
             min_path_length = len(paths[i]) + len(paths[j])
@@ -91,13 +128,12 @@ def compute_wdg_heuristic(mdd, agents, initial_paths, paths):
             if mdd[i].is_dependent(mdd[j]) and diff > 0:
                 dependency_graph.add_edge(i, j, weight=diff)
                 dependencies.append((i, j))
-        ## TODO get edge-weighted minimum vertex cover
+                edge_weights[(i, j)] = diff
+
+    # Get edge-weighted min vertex cover
     if len(dependency_graph.edges) > 0: 
-        print("the min vertex cover is", vertex_cover.min_weighted_vertex_cover(dependency_graph))
-    for u, v, weight in dependency_graph.edges(data=True):
-        print(u, v, weight)
-    connected_components = list(networkx.connected_components(dependency_graph))
-    for component in connected_components: 
-        h_value += get_node_weights(dependency_graph, list(component))
-    print("the connected commpontnets are", connected_components)
-    return h_value, dependencies
+        connected_components = list(networkx.connected_components(dependency_graph))
+        for component in connected_components: 
+            # compute h_val as the minimum vertex_cover with min cost
+            h_value += get_node_weights(dependency_graph, list(component))
+    return h_value, dependencies, edge_weights

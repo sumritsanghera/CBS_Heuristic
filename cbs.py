@@ -142,11 +142,11 @@ def disjoint_splitting(collision):
 class CBSSolver(object):
     """The high-level search of CBS."""
 
-    def __init__(self, my_map, starts, goals, heuristic_option=0):
+    def __init__(self, my_map, starts, goals, heuristic_option=2):
         """my_map   - list of lists specifying obstacle positions
         starts      - [(x1, y1), (x2, y2), ...] list of start locations
         goals       - [(x1, y1), (x2, y2), ...] list of goal locations
-        heuristic_option - 0: CG heuristic, 1: DG heuristic, -1: No heuristic
+        heuristic_option - 0: CG heuristic, 1: DG heuristic, 2: WDG heuristic, -1: No heuristic
         """
         self.my_map = my_map
         self.starts = starts
@@ -163,6 +163,7 @@ class CBSSolver(object):
 
         self.mdds = dict()
         self.initial_paths = []
+        self.edge_weights = dict() 
         
         # compute heuristics for the low-level search
         self.heuristics = []
@@ -204,9 +205,10 @@ class CBSSolver(object):
             self.final_dependencies.update(dependencies)
 
         elif self.heuristic_option == 2:
-            h_val, dependencies = compute_wdg_heuristic(self.mdds, self.num_of_agents, self.initial_paths, node['paths'])
+            h_val, dependencies, weights = compute_wdg_heuristic(self.mdds, self.num_of_agents, 
+                                                                 self.initial_paths, node['paths'])
             self.final_dependencies.update(dependencies)
-
+            self.edge_weights = weights
         
         f_val = node['cost'] + h_val #calculate the f-value
         node['h_val'] = h_val #store h-value in node
@@ -348,4 +350,22 @@ class CBSSolver(object):
                 
             mvc_size = len(vertex_cover.min_weighted_vertex_cover(final_graph))
             print(f"\nFinal conflict graph heuristic value (H_cg): {mvc_size}")
-            
+
+        # print stats for WDG heuristic
+        elif self.heuristic_option == 2:
+            print("\nDependency Summary:")
+            print(f"Total number of dependencies with weights found: {len(self.final_dependencies)}")
+            print("Dependencies between agents:")
+            for i, j in sorted(self.final_dependencies):
+                print(f"  Agents {i} and {j} with edge weight {self.edge_weights[(i, j)]}")
+            final_graph = networkx.Graph()
+            for i, j in self.final_dependencies:
+                final_graph.add_edge(i, j, weight=self.edge_weights[(i, j)])
+
+            # compute h-value from edge based mvc
+            mvc_size = 0
+            connected_components = list(networkx.connected_components(final_graph))
+            for component in connected_components:
+                mvc_size += get_node_weights(final_graph, list(component))
+            print(f"\nFinal weighted dependency graph heuristic value (H_wdg): {mvc_size}")
+
