@@ -269,12 +269,17 @@ class MDD:
                     if abs(child_1[0] - pair[0][0]) + abs(child_1[1] - pair[0][1]) == 1:
                         for child_2 in children_2:
                             if abs(child_2[0] - pair[1][0]) + abs(child_2[1] - pair[1][1]) == 1:
+                                # Check vertex collision
+                                if child_1 == child_2:
+                                    continue
+                                # Check edge collision
+                                if child_1 == pair[1] and child_2 == pair[0]:
+                                    continue
                                 if child_1 != child_2 and [child_1, child_2] not in joint_mdd[t + 1]:
                                     joint_mdd[t + 1].append([child_1, child_2])
+
             # Check Dependency and cardinality
             if len(joint_mdd[t]) == 0:
                 if len(joint_mdd[t - 1]) == 1:
-                    return True
-                else:
                     return True
         return False
