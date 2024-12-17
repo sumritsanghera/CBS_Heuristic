@@ -136,6 +136,7 @@ def compute_cg_heuristic(mdd, agents):
             
             #check each level for cardinal conflicts
             for d in range(depth):
+                #vertex conflicts
                 if (len(mdd1.mdd[d]) == 1 and len(mdd2.mdd[d]) == 1 and 
                     mdd1.mdd[d][0] == mdd2.mdd[d][0]):
                     conflict_graph.add_node(i)
@@ -143,6 +144,21 @@ def compute_cg_heuristic(mdd, agents):
                     conflict_graph.add_edge(i, j)
                     cardinal_conflicts.append((i, j, d, mdd1.mdd[d][0]))
                     break
+
+                #edge conflicts
+                if d < depth - 1:  
+                    curr1 = mdd1.mdd[d][0]
+                    curr2 = mdd2.mdd[d][0]
+                    next1 = mdd1.mdd[d+1][0]
+                    next2 = mdd2.mdd[d+1][0]
+                    
+                    #if agents swap positions -- needed for mdd_test3
+                    if curr1 == next2 and curr2 == next1:
+                        conflict_graph.add_node(i)
+                        conflict_graph.add_node(j)
+                        conflict_graph.add_edge(i, j)
+                        cardinal_conflicts.append((i, j, d, (curr1, curr2)))
+                        break
 
     return cardinal_conflicts
 
