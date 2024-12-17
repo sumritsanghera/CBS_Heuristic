@@ -191,14 +191,8 @@ class CBSSolver(object):
     def push_node(self, node):
         h_val = 0
         if self.heuristic_option == 0:
-            conflicts = compute_cg_heuristic(self.mdds, self.num_of_agents)
+            conflicts, h_val = compute_cg_heuristic(self.mdds, self.num_of_agents)
             self.final_conflicts.update(conflicts)
-
-            conflict_graph = networkx.Graph()
-            for i, j, _, _ in conflicts:
-                conflict_graph.add_edge(i, j)
-            if len(conflict_graph.edges) > 0:
-                h_val = len(vertex_cover.min_weighted_vertex_cover(conflict_graph))
 
         elif self.heuristic_option == 1:
             h_val, dependencies = compute_dg_heuristic(self.mdds, self.num_of_agents)
