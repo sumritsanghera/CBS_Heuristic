@@ -146,7 +146,7 @@ def compute_cg_heuristic(mdd, agents):
                     break
 
                 #edge conflicts
-                if d < depth - 1:  
+                if d < depth - 2:  
                     curr1 = mdd1.mdd[d][0]
                     curr2 = mdd2.mdd[d][0]
                     next1 = mdd1.mdd[d+1][0]

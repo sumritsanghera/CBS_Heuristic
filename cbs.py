@@ -1,7 +1,7 @@
 import time as timer
 import heapq
 import random
-from single_agent_planner import compute_heuristics, a_star, get_location, get_sum_of_cost
+from single_agent_planner import compute_heuristics, a_star, get_location, get_sum_of_cost, build_constraint_table
 from paths_violate_constraint import paths_violate_constraint
 from mdd import *
 from conflict_graph import *
@@ -142,7 +142,7 @@ def disjoint_splitting(collision):
 class CBSSolver(object):
     """The high-level search of CBS."""
 
-    def __init__(self, my_map, starts, goals, heuristic_option=2):
+    def __init__(self, my_map, starts, goals, heuristic_option=0):
         """my_map   - list of lists specifying obstacle positions
         starts      - [(x1, y1), (x2, y2), ...] list of start locations
         goals       - [(x1, y1), (x2, y2), ...] list of goal locations
@@ -179,10 +179,11 @@ class CBSSolver(object):
     #     return mdds
     def build_mdds(self): #updated for new mdd.py
         for agent in range(self.num_of_agents):
-            self.mdds[agent] = MDD(self.my_map, self.starts[agent], self.goals[agent], self.heuristics[agent])
+            self.mdds[agent] = MDD(self.my_map, self.starts[agent], self.goals[agent], self.heuristics[agent], [])
 
-    def update_mdd(self, agent): 
-        self.mdds[agent] = MDD(self.my_map, self.starts[agent], self.goals[agent], self.heuristics[agent])
+    def update_mdd(self, agent, constraints): 
+        self.mdds[agent] = MDD(self.my_map, self.starts[agent], self.goals[agent], 
+                               self.heuristics[agent], build_constraint_table(constraints, agent))
 
 
     def classify_collision(self, collision):
@@ -319,7 +320,7 @@ class CBSSolver(object):
                     
                     Q['collisions'] = detect_collisions(Q['paths'])
                     Q['cost'] = get_sum_of_cost(Q['paths'])
-                    self.update_mdd(agent)
+                    self.update_mdd(agent, Q['constraints'])
                     self.push_node(Q)
         self.print_results(root)
         return root['paths']
