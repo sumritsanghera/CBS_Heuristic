@@ -179,18 +179,17 @@ class CBSSolver(object):
     #     return mdds
     def build_mdds(self): #updated for new mdd.py
         for agent in range(self.num_of_agents):
-            self.mdds[agent] = MDD(self.my_map, self.starts[agent], self.goals[agent], self.heuristics[agent])
+            self.mdds[agent] = MDD(self.my_map, self.starts[agent], self.goals[agent], self.heuristics[agent], [], [])
 
-    def update_mdd(self, agent): 
-        self.mdds[agent] = MDD(self.my_map, self.starts[agent], self.goals[agent], 
-                               self.heuristics[agent])
+    def update_mdd(self, agent, constraints, paths): 
+        self.mdds[agent].update_mdd(agent, constraints, paths)
 
 
     def classify_collision(self, collision):
         """Classifies the collisions to help debug during runtime"""
-        #print("==COLLISION!==")
-        #print(f"Location(s): {collision['loc']}")
-        #print(f"Timestep: {collision['timestep']}")
+        print("==COLLISION!==")
+        print(f"Location(s): {collision['loc']}")
+        print(f"Timestep: {collision['timestep']}")
         #collision_type = detect_cardinal_conflicts(collision, mdds)
         #print(f"Collision classified as: {collision_type}")
         #return collision_type
@@ -320,7 +319,7 @@ class CBSSolver(object):
                     
                     Q['collisions'] = detect_collisions(Q['paths'])
                     Q['cost'] = get_sum_of_cost(Q['paths'])
-                    self.update_mdd(agent)
+                    self.update_mdd(agent, Q['constraints'], Q['paths'][agent])
                     self.push_node(Q)
         self.print_results(root)
         return root['paths']

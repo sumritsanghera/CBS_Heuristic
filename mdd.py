@@ -148,11 +148,13 @@
 ####NEW####
 
 import math
-from single_agent_planner import move, push_node, pop_node, compare_nodes, get_path
+from single_agent_planner import move, push_node, pop_node, compare_nodes, get_path, build_constraint_table
 import heapq
+import time
 
 # a_star search to find the distance from current location to goal
 def get_distance(loc, goal, my_map, heuristics): 
+
     open_list = [] 
     closed_list = dict()
     root = {'loc': loc, 'g_val': 0, 'h_val': heuristics[loc], 'parent': None}
@@ -209,20 +211,24 @@ def optimal_paths(locs, goal, already_visited, my_map, heuristics) -> list:
 
 
 class MDD:
-    def __init__(self, my_map, loc_start, loc_goal, heuristics):
+    def __init__(self, my_map, loc_start, loc_goal, heuristics, constraints, new_path):
         self.loc_start = loc_start
         self.loc_goal = loc_goal
         self.my_map = my_map
         self.mdd = dict()
         self.heuristics = heuristics
+        self.constraints = constraints
+        self.new_path = new_path
+        self.already_visited = []
         self.generate_mdd()
 
     # construct an MDD for an agent with all the possible moves
     def generate_mdd(self):
     # Set root node in MDD to the start location of agent
         self.mdd[0] = [self.loc_start]
+        print(self.new_path)
+        print(self.mdd)
         time = 1
-        already_visited = []
         while True:
             # print(f"Time: {time}") #:TEST
             possible_moves = []
@@ -234,7 +240,7 @@ class MDD:
                     print(f"check mdd: {self.mdd}")
                     return
                 # Find possible moves that allow an agent to progress
-                already_visited.append(loc)
+                self.already_visited.append(loc)
                 for i in range(4):
                     loc_next = move(loc, i)
                     # make sure all moves are within bounds
@@ -248,11 +254,33 @@ class MDD:
                         possible_moves.append(loc_next)
                     # print(f"Location: {location}, Possible Moves: {possible_moves}") #TEST
             
-                self.mdd[time] = optimal_paths(possible_moves, self.loc_goal, already_visited, self.my_map,
+            self.mdd[time] = optimal_paths(possible_moves, self.loc_goal, self.already_visited, self.my_map,
                                            self.heuristics)
 
             # self.mdd[time] = possible_moves
             time += 1
+
+    # Update MDD without having to reconstruct the whole MDD
+    def update_mdd(self, agent, constraints, paths): 
+        print(paths)
+        constraints = build_constraint_table(constraints, agent)
+        for time in self.mdd: 
+            self.mdd[time].clear()
+        
+        # initialize extra space in MDD
+        if len(paths) > len(self.mdd): 
+            for i in range(len(paths) - len(self.mdd)): 
+                self.mdd[len(self.mdd) + i] = []
+
+        possible_moves = []
+        # add new nodes to timesteps based on planned path
+        for i, move in enumerate(paths): 
+            if move not in self.mdd[i]:
+                possible_moves.append(move)
+                self.mdd[i] = optimal_paths(possible_moves, self.loc_goal, [],  self.my_map, self.heuristics)
+        print(self.mdd)
+
+
 
     # Returns dependency and cardinality
     def is_dependent(self, other) -> bool:
@@ -278,6 +306,7 @@ class MDD:
                                     continue
                                 # Check edge collision
                                 if child_1 == pair[1] and child_2 == pair[0]:
+                                    print(child_1, child_2, pair[1], pair[0])
                                     continue
                                 if child_1 != child_2 and [child_1, child_2] not in joint_mdd[t + 1]:
                                     joint_mdd[t + 1].append([child_1, child_2])
