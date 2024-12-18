@@ -142,7 +142,7 @@ def disjoint_splitting(collision):
 class CBSSolver(object):
     """The high-level search of CBS."""
 
-    def __init__(self, my_map, starts, goals, heuristic_option=1):
+    def __init__(self, my_map, starts, goals, heuristic_option=0):
         """my_map   - list of lists specifying obstacle positions
         starts      - [(x1, y1), (x2, y2), ...] list of start locations
         goals       - [(x1, y1), (x2, y2), ...] list of goal locations

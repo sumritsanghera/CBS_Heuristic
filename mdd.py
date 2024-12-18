@@ -115,6 +115,8 @@ class MDD:
         for constraint in constraints: 
             if constraint['agent'] == agent: 
                 time = constraint['timestep']
+                if time not in self.mdd or time-1 not in self.mdd: 
+                    continue
                 # check edge constraint 
                 if len(constraint['loc']) == 2: 
                     if constraint['loc'][0] in self.mdd[time-1] and constraint['loc'][1] in self.mdd[time]: 
@@ -124,6 +126,8 @@ class MDD:
                     if constraint['loc'][0] in self.mdd[time]: 
                         self.mdd[time].remove(constraint['loc'][0])
         for i, move in enumerate(path): 
+            if i not in self.mdd: 
+                continue
             if move not in self.mdd[i]: 
                 self.mdd[i].append(move)
 
@@ -141,6 +145,10 @@ class MDD:
 
         for t in range(t_min -1):
             for pair in joint_mdd[t]:
+                if (t not in self.mdd or (t + 1) not in self.mdd or 
+                    t not in other.mdd or (t+1) not in other.mdd):
+
+                    continue
                 children_1 = self.mdd[t + 1]
                 children_2 = other.mdd[t + 1]
                 for child_1 in children_1:

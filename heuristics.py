@@ -20,6 +20,8 @@ def cg_heuristic(mdd, agents):
             #check each level for cardinal conflicts
             for d in range(depth):
                 #vertex conflicts
+                if d not in mdd1.mdd or d not in mdd2.mdd: 
+                    continue
                 if (len(mdd1.mdd[d]) == 1 and len(mdd2.mdd[d]) == 1 and 
                     mdd1.mdd[d][0] == mdd2.mdd[d][0]):
                     conflict_graph.add_node(i)
@@ -29,7 +31,9 @@ def cg_heuristic(mdd, agents):
                     break
 
                 #edge conflicts
-                if d < depth - 1:  
+                if d < depth - 2:  
+                    if d+1 not in mdd1.mdd or d+1 not in mdd2.mdd: 
+                        continue
                     curr1 = mdd1.mdd[d][0]
                     curr2 = mdd2.mdd[d][0]
                     next1 = mdd1.mdd[d+1][0]
