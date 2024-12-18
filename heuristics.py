@@ -3,12 +3,12 @@ from networkx.algorithms.approximation import vertex_cover
 from mdd import *
 from helper import *
 
-def compute_cg_heuristic(mdd, agents):
-    """Compute h-value using the conflict graph heuristic based on cardinal conflicts"""
+def cg_heuristic(mdd, agents):
+    """Compute H_cg using the conflict graph heuristic based on cardinal conflicts"""
     conflict_graph = networkx.Graph(name="Conflict Graph")
     cardinal_conflicts = []
     
-    #check each pair of agents
+    #check each pair
     for i in range(agents - 1):
         for j in range(i + 1, agents):
             mdd1 = mdd[i]  
@@ -48,7 +48,7 @@ def compute_cg_heuristic(mdd, agents):
 
     return cardinal_conflicts, h_val
 
-def compute_dg_heuristic(mdd, agents):
+def dg_heuristic(mdd, agents):
     """Compute H_dg value based on dependencies between agents"""
     dependency_graph = networkx.Graph(name="Dependency Graph")
     dependencies = []
@@ -70,7 +70,7 @@ def compute_dg_heuristic(mdd, agents):
     return h_value, dependencies
 
 # WDG heuristic
-def compute_wdg_heuristic(mdd, agents, initial_paths, node, my_map, heuristics): 
+def wdg_heuristic(mdd, agents, initial_paths, node, my_map, heuristics): 
     dependency_graph = networkx.Graph(name="Dependency Graph") 
     dependencies = []
     h_value = 0

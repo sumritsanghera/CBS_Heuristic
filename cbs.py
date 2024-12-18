@@ -4,7 +4,7 @@ import random
 from single_agent_planner import compute_heuristics, a_star, get_location, get_sum_of_cost, build_constraint_table
 from paths_violate_constraint import paths_violate_constraint
 from mdd import *
-from conflict_graph import *
+from heuristics import *
 
 
 def detect_collision(path1, path2):
@@ -189,15 +189,15 @@ class CBSSolver(object):
     def push_node(self, node):
         h_val = 0
         if self.heuristic_option == 0:
-            conflicts, h_val = compute_cg_heuristic(self.mdds, self.num_of_agents)
+            conflicts, h_val = cg_heuristic(self.mdds, self.num_of_agents)
             self.final_conflicts.update(conflicts)
 
         elif self.heuristic_option == 1:
-            h_val, dependencies = compute_dg_heuristic(self.mdds, self.num_of_agents)
+            h_val, dependencies = dg_heuristic(self.mdds, self.num_of_agents)
             self.final_dependencies.update(dependencies)
 
         elif self.heuristic_option == 2:
-            h_val, dependencies = compute_wdg_heuristic(self.mdds, self.num_of_agents,
+            h_val, dependencies = wdg_heuristic(self.mdds, self.num_of_agents,
                                                                  self.initial_paths, node, self.my_map, self.heuristics)
             self.final_dependencies.update(dependencies)
         
@@ -206,11 +206,11 @@ class CBSSolver(object):
 
         heapq.heappush(self.open_list, (f_val, h_val, len(node['collisions']), self.num_of_generated, node))
 
-        #print("Generate node {} with f-val {} (g-val {} + h-val {})".format(self.num_of_generated, f_val, node['cost'], h_val))
         print("Generate node {}".format(self.num_of_generated, h_val))
         self.num_of_generated += 1
         
-    def pop_node(self): #update function to accomodate changed push_node
+    #update function to accomodate changed push_node
+    def pop_node(self):
         _, _, _, id, node = heapq.heappop(self.open_list)
         print("Expand node {} with f-val {} (g-val {} + h-val {})".format(
             id, node['cost'] + node['h_val'], node['cost'], node['h_val']))
@@ -259,7 +259,7 @@ class CBSSolver(object):
 
             #choose collision
             collision = P['collisions'][0]
-            #collision_type = self.classify_collision(collision)
+            #collision_type = self.classify_collision(collision)  ##uncomment this for debugging
 
             constraints = disjoint_splitting(collision) if disjoint else standard_splitting(collision)
 
