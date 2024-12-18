@@ -201,6 +201,7 @@ class CBSSolver(object):
         elif self.heuristic_option == 2:
             h_val, dependencies, edge_weights = wdg_heuristic(self.mdds, self.num_of_agents, node['paths'], node['paths'])
             self.final_dependencies.update(dependencies)
+            self.edge_weights.update(edge_weights)
         
         f_val = node['cost'] + h_val #calculate the f-value
         node['h_val'] = h_val #store h-value in node
@@ -349,8 +350,10 @@ class CBSSolver(object):
             print(f"Total number of dependencies with weights found: {len(self.final_dependencies)}")
             print("Dependencies between agents:")
             for i, j in sorted(self.final_dependencies):
-                print(f"  Agents {i} and {j} with edge weight {w}")
+                print(f"  Agents {i} and {j} with edge weight {self.edge_weights[(i, j)]}")
             final_graph = networkx.Graph()
+            for i, j in self.final_dependencies:
+                final_graph.add_edge(i, j, weight=self.edge_weights[(i, j)])
 
             # compute h-value from edge based mvc
             mvc_size = 0
