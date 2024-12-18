@@ -142,11 +142,11 @@ def disjoint_splitting(collision):
 class CBSSolver(object):
     """The high-level search of CBS."""
 
-    def __init__(self, my_map, starts, goals, heuristic_option=0):
+    def __init__(self, my_map, starts, goals, heuristic_option=2):
         """my_map   - list of lists specifying obstacle positions
         starts      - [(x1, y1), (x2, y2), ...] list of start locations
         goals       - [(x1, y1), (x2, y2), ...] list of goal locations
-        heuristic_option - 0: CG heuristic, 1: DG heuristic, -1: No heuristic
+        heuristic_option - 0: CG heuristic, 1: DG heuristic, 2: WDG heuristic, -1: No heuristic
         """
         self.my_map = my_map
         self.starts = starts
@@ -163,20 +163,13 @@ class CBSSolver(object):
 
         self.mdds = dict()
         self.initial_paths = []
+        self.edge_weights = dict() 
         
         # compute heuristics for the low-level search
         self.heuristics = []
         for goal in self.goals:
             self.heuristics.append(compute_heuristics(my_map, goal))
 
-    # def build_mdds(self, node, paths):
-    #     mdds = []
-    #     for agent in range(self.num_of_agents):
-    #         path_cost = len(paths[agent]) - 1
-    #         mdd = MDD(self.my_map, self.starts[agent], self.goals[agent],
-    #                   self.heuristics[agent], agent, node['constraints'], path_cost)
-    #         mdds.append(mdd)
-    #     return mdds
     def build_mdds(self): #updated for new mdd.py
         for agent in range(self.num_of_agents):
             self.mdds[agent] = MDD(self.my_map, self.starts[agent], self.goals[agent], self.heuristics[agent], [], [])
@@ -185,19 +178,19 @@ class CBSSolver(object):
         self.mdds[agent].update_mdd(agent, constraints, paths)
 
 
-    def classify_collision(self, collision):
-        """Classifies the collisions to help debug during runtime"""
-        print("==COLLISION!==")
-        print(f"Location(s): {collision['loc']}")
-        print(f"Timestep: {collision['timestep']}")
-        #collision_type = detect_cardinal_conflicts(collision, mdds)
-        #print(f"Collision classified as: {collision_type}")
-        #return collision_type
+    #def classify_collision(self, collision):
+        ### FOR DEBUGGING ###
+        # print("==COLLISION!==")
+        # print(f"Location(s): {collision['loc']}")
+        # print(f"Timestep: {collision['timestep']}")
+        # collision_type = detect_cardinal_conflicts(collision, mdds)
+        # print(f"Collision classified as: {collision_type}")
+        # return collision_type
 
     def push_node(self, node):
         h_val = 0
         if self.heuristic_option == 0:
-            conflicts = compute_cg_heuristic(self.mdds, self.num_of_agents)
+            conflicts, h_val = compute_cg_heuristic(self.mdds, self.num_of_agents)
             self.final_conflicts.update(conflicts)
 
         elif self.heuristic_option == 1:
@@ -205,26 +198,19 @@ class CBSSolver(object):
             self.final_dependencies.update(dependencies)
 
         elif self.heuristic_option == 2:
-            h_val, dependencies = compute_wdg_heuristic(self.mdds, self.num_of_agents, self.initial_paths, node['paths'])
+            h_val, dependencies = compute_wdg_heuristic(self.mdds, self.num_of_agents,
+                                                                 self.initial_paths, node, self.my_map, self.heuristics)
             self.final_dependencies.update(dependencies)
-
-        #calculate the f-value
-        f_val = node['cost'] + h_val
+        
+        f_val = node['cost'] + h_val #calculate the f-value
         node['h_val'] = h_val #store h-value in node
 
         heapq.heappush(self.open_list, (f_val, h_val, len(node['collisions']), self.num_of_generated, node))
 
         #print("Generate node {} with f-val {} (g-val {} + h-val {})".format(self.num_of_generated, f_val, node['cost'], h_val))
-        #heapq.heappush(self.open_list, (node['cost'], len(node['collisions']), self.num_of_generated, node))
-        #print("Generate node {}".format(self.num_of_generated, h_val))
+        print("Generate node {}".format(self.num_of_generated, h_val))
         self.num_of_generated += 1
         
-
-    # def pop_node(self):
-    #     _, _, id, node = heapq.heappop(self.open_list)
-    #     print("Expand node {}".format(id))
-    #     self.num_of_expanded += 1
-    #     return node
     def pop_node(self): #update function to accomodate changed push_node
         _, _, _, id, node = heapq.heappop(self.open_list)
         print("Expand node {} with f-val {} (g-val {} + h-val {})".format(
@@ -272,9 +258,9 @@ class CBSSolver(object):
                 self.print_results(P)
                 return P['paths']
 
-            # Choose collision and classify it
+            #choose collision
             collision = P['collisions'][0]
-            collision_type = self.classify_collision(collision)
+            #collision_type = self.classify_collision(collision)
 
             constraints = disjoint_splitting(collision) if disjoint else standard_splitting(collision)
 
@@ -356,4 +342,22 @@ class CBSSolver(object):
                 
             mvc_size = len(vertex_cover.min_weighted_vertex_cover(final_graph))
             print(f"\nFinal conflict graph heuristic value (H_cg): {mvc_size}")
-            
+
+        # print stats for WDG heuristic
+        elif self.heuristic_option == 2:
+            print("\nDependency Summary:")
+            print(f"Total number of dependencies with weights found: {len(self.final_dependencies)}")
+            print("Dependencies between agents:")
+            for i, j, w in sorted(self.final_dependencies):
+                print(f"  Agents {i} and {j} with edge weight {w}")
+            final_graph = networkx.Graph()
+            for i, j, w in self.final_dependencies:
+                final_graph.add_edge(i, j, weight=w)
+
+            # compute h-value from edge based mvc
+            mvc_size = 0
+            connected_components = list(networkx.connected_components(final_graph))
+            for component in connected_components:
+                mvc_size += get_node_weights(final_graph, list(component))
+            print(f"\nFinal weighted dependency graph heuristic value (H_wdg): {mvc_size}")
+
