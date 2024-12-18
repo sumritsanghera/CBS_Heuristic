@@ -1,11 +1,10 @@
 import math
-from single_agent_planner import move, push_node, pop_node, compare_nodes, get_path, build_constraint_table
+from single_agent_planner import *
 import heapq
-import time
+import time as timer
 
-# a_star search to find the distance from current location to goal
+# a_star search to find the distance from current location to goal to generate_mdd
 def get_distance(loc, goal, my_map, heuristics): 
-
     open_list = [] 
     closed_list = dict()
     root = {'loc': loc, 'g_val': 0, 'h_val': heuristics[loc], 'parent': None}
@@ -62,14 +61,12 @@ def optimal_paths(locs, goal, already_visited, my_map, heuristics) -> list:
 
 
 class MDD:
-    def __init__(self, my_map, loc_start, loc_goal, heuristics, constraints, new_path):
+    def __init__(self, my_map, loc_start, loc_goal, heuristics):
         self.loc_start = loc_start
         self.loc_goal = loc_goal
         self.my_map = my_map
         self.mdd = dict()
         self.heuristics = heuristics
-        self.constraints = constraints
-        self.new_path = new_path
         self.already_visited = []
         self.generate_mdd()
 
@@ -77,8 +74,6 @@ class MDD:
     def generate_mdd(self):
     # Set root node in MDD to the start location of agent
         self.mdd[0] = [self.loc_start]
-        print(self.new_path)
-        print(self.mdd)
         time = 1
         while True:
             # print(f"Time: {time}") #:TEST
@@ -88,7 +83,7 @@ class MDD:
             for loc in self.mdd[time - 1]:
                 if loc == self.loc_goal:
                     # print(f"Goal reached at timestep {time}")  #TEST
-                    # print(f"check mdd: {self.mdd}")
+                    print(f"check mdd: {self.mdd}")
                     return
                 # Find possible moves that allow an agent to progress
                 self.already_visited.append(loc)
@@ -112,26 +107,27 @@ class MDD:
             time += 1
 
     # Update MDD without having to reconstruct the whole MDD
-    def update_mdd(self, agent, constraints, paths): 
-        print(paths)
-        constraints = build_constraint_table(constraints, agent)
-        for time in self.mdd: 
-            self.mdd[time].clear()
-        
+    def update_mdd(self, agent, constraints, path): 
+        if len(path) > len(self.mdd): 
+            for i in range(len(path) - len(self.mdd)): 
+                self.mdd[len(self.mdd)+i] = []
         # initialize extra space in MDD
-        if len(paths) > len(self.mdd): 
-            for i in range(len(paths) - len(self.mdd)): 
-                self.mdd[len(self.mdd) + i] = []
+        for constraint in constraints: 
+            if constraint['agent'] == agent: 
+                time = constraint['timestep']
+                # check edge constraint 
+                if len(constraint['loc']) == 2: 
+                    if constraint['loc'][0] in self.mdd[time-1] and constraint['loc'][1] in self.mdd[time]: 
+                        self.mdd[time-1].remove(constraint['loc'][0])
+                        self.mdd[time].remove(constraint['loc'][1])
+                else: 
+                    if constraint['loc'][0] in self.mdd[time]: 
+                        self.mdd[time].remove(constraint['loc'][0])
+        for i, move in enumerate(path): 
+            if move not in self.mdd[i]: 
+                self.mdd[i].append(move)
 
-        possible_moves = []
-        # add new nodes to timesteps based on planned path
-        for i, move in enumerate(paths): 
-            if move not in self.mdd[i]:
-                possible_moves.append(move)
-                self.mdd[i] = optimal_paths(possible_moves, self.loc_goal, [],  self.my_map, self.heuristics)
-        print(self.mdd)
-
-
+        return self.mdd
 
     # Returns dependency and cardinality
     def is_dependent(self, other) -> bool:
@@ -143,7 +139,7 @@ class MDD:
 
         joint_mdd[0].append([self.mdd[0][0], other.mdd[0][0]])
 
-        for t in range(t_min -1 ):
+        for t in range(t_min -1):
             for pair in joint_mdd[t]:
                 children_1 = self.mdd[t + 1]
                 children_2 = other.mdd[t + 1]
@@ -154,16 +150,15 @@ class MDD:
                             if abs(child_2[0] - pair[1][0]) + abs(child_2[1] - pair[1][1]) == 1:
                                 # Check vertex collision
                                 if child_1 == child_2:
-                                    continue
+                                    return True
                                 # Check edge collision
                                 if child_1 == pair[1] and child_2 == pair[0]:
-                                    print(child_1, child_2, pair[1], pair[0])
-                                    continue
+                                    return True
                                 if child_1 != child_2 and [child_1, child_2] not in joint_mdd[t + 1]:
                                     joint_mdd[t + 1].append([child_1, child_2])
 
-            # Check Dependency and cardinality
-            if len(joint_mdd[t]) == 0:
-                if len(joint_mdd[t - 1]) == 1:
-                    return True
+        # Check Dependency and cardinality for final
+        if len(joint_mdd[t]) == 0:
+            if len(joint_mdd[t - 1]) == 1:
+                return True
         return False

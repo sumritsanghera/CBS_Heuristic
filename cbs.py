@@ -142,7 +142,7 @@ def disjoint_splitting(collision):
 class CBSSolver(object):
     """The high-level search of CBS."""
 
-    def __init__(self, my_map, starts, goals, heuristic_option=2):
+    def __init__(self, my_map, starts, goals, heuristic_option=1):
         """my_map   - list of lists specifying obstacle positions
         starts      - [(x1, y1), (x2, y2), ...] list of start locations
         goals       - [(x1, y1), (x2, y2), ...] list of goal locations
@@ -163,7 +163,6 @@ class CBSSolver(object):
 
         self.mdds = dict()
         self.initial_paths = []
-        self.edge_weights = dict() 
         
         # compute heuristics for the low-level search
         self.heuristics = []
@@ -172,10 +171,10 @@ class CBSSolver(object):
 
     def build_mdds(self): #updated for new mdd.py
         for agent in range(self.num_of_agents):
-            self.mdds[agent] = MDD(self.my_map, self.starts[agent], self.goals[agent], self.heuristics[agent], [], [])
+            self.mdds[agent] = MDD(self.my_map, self.starts[agent], self.goals[agent], self.heuristics[agent])
 
     def update_mdd(self, agent, constraints, paths): 
-        self.mdds[agent].update_mdd(agent, constraints, paths)
+        self.mdds[agent].update_mdd(agent, constraints, paths[agent])
 
 
     #def classify_collision(self, collision):
@@ -305,7 +304,7 @@ class CBSSolver(object):
                     
                     Q['collisions'] = detect_collisions(Q['paths'])
                     Q['cost'] = get_sum_of_cost(Q['paths'])
-                    self.update_mdd(agent, Q['constraints'], Q['paths'][agent])
+                    self.update_mdd(agent, Q['constraints'], Q['paths'])
                     self.push_node(Q)
         self.print_results(root)
         return root['paths']
